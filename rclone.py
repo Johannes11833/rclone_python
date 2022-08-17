@@ -80,7 +80,7 @@ def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE,
             if '\n' not in var:
                 buffer += var
             else:
-                # matcher that finds the line(s) with transferred update that includes the total progress
+                # matcher that finds the line with transferred update that includes the total progress
                 transferred_block = re.findall(r'Transferred:(?:.|\n)+ETA \d+s', buffer)
 
                 # update the progress
