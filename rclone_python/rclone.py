@@ -34,8 +34,6 @@ def create_remote(remote_name, remote_type: Union[str, RemoteTypes], client_id=N
         remote_type = remote_type.value
 
     if not _check_remote_existing(remote_name):
-        # setup is not yet complete
-
         # set up the selected cloud
         command = f"rclone config create \"{remote_name}\" {remote_type}"
 
@@ -73,10 +71,10 @@ def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=Fa
 
     if move_files:
         command = f'rclone move'
-        prog_title = f'Moving from {in_path} to {remote_name_dest}'
+        prog_title = f'Moving from {rclone_path_in} to {rclone_path_out}'
     else:
         command = f'rclone copy'
-        prog_title = f'Copying from {in_path} to {remote_name_dest}'
+        prog_title = f'Copying from {rclone_path_in} to {rclone_path_out}'
 
     # add global rclone flags
     if ignore_existing:
