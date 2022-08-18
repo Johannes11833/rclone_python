@@ -1,2 +1,1 @@
-simple_term_menu==1.5.0
 alive-progress==2.4.1

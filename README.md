@@ -1,9 +1,12 @@
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+[![PyPI version](https://badge.fury.io/py/rclone-python.svg)](https://badge.fury.io/py/rclone-python)
 
-# py-rclone
+# rclone-python
 
 A python wrapper for rclone that makes rclone's functionality usable in python.
 rclone needs to be installed on the system for the wrapper to work.
+
+![demo gif](demo/demo.gif)
 
 ## Features
 
@@ -43,6 +46,8 @@ from py_rclone import rclone
 rclone.copy('onedrive:test_dir', 'data')
 ```
 
+Copying from onedrive:test_dir to data |████████████████████████████████████████| 100% in 18.0s (5.56%/s)
+
 ### Delete
 
 Delete a file or a directory. When deleting a directory, only the files in the directory (and all it's subdirectories)
@@ -65,4 +70,3 @@ from py_rclone import rclone
 rclone.purge('onedrive:test_dir')
 ```
 
-Copying from onedrive:test_dir to data |████████████████████████████████████████| 100% in 18.0s (5.56%/s)

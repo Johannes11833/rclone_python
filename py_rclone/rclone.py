@@ -11,10 +11,6 @@ from alive_progress import alive_bar
 from py_rclone.remote_types import RemoteTypes
 
 
-def get_version() -> str:
-    return "0.0.3"
-
-
 def __check_installed(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -137,7 +133,6 @@ def delete(path: str):
 
 def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE,
                      **kwargs) -> subprocess.Popen:
-    print(command)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=stderr, shell=True, **kwargs)
 
     progress = 0
@@ -168,4 +163,5 @@ def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE,
                     progress = int(reg[-1][:-1]) if reg else progress
                     pbar(progress / 100.0)
 
+        pbar(1)
     return process
