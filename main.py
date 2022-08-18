@@ -1,4 +1,4 @@
-from rclone_python import rclone
+from py_rclone import rclone
 
 if __name__ == '__main__':
     # rclone.create_remote('onedrive2', RemoteTypes.onedrive)

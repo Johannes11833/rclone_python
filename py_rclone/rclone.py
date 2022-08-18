@@ -8,7 +8,11 @@ from typing import Union, List
 
 from alive_progress import alive_bar
 
-from rclone_python.remote_types import RemoteTypes
+from py_rclone.remote_types import RemoteTypes
+
+
+def get_version() -> str:
+    return "0.0.3"
 
 
 def __check_installed(func):
