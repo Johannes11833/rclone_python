@@ -109,26 +109,26 @@ def get_remotes() -> List[str]:
 
 
 @__check_installed
-def purge(remote_name: str, path: str):
-    process = subprocess.run(f'rclone purge {remote_name}:{path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+def purge(path: str):
+    process = subprocess.run(f'rclone purge {path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              shell=True)
     if process.returncode == os.EX_OK:
         logging.info(f'Successfully deleted {path}')
     else:
         raise Exception(
-            f'Purging path \"{path}\" on remote \"{remote_name}\" failed with error message:\n{process.stderr}')
+            f'Purging path \"{path}\" failed with error message:\n{process.stderr}')
 
 
 @__check_installed
-def delete(remote_name: str, path: str, is_file=False):
-    command = 'deletefile' if is_file else 'delete'
-    process = subprocess.run(f'rclone {command} {remote_name}:{path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+def delete(path: str):
+    command = 'delete'
+    process = subprocess.run(f'rclone {command} {path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              shell=True)
     if process.returncode == os.EX_OK:
         logging.info(f'Successfully deleted {path}')
     else:
         raise Exception(
-            f'Deleting path \"{path}\" on remote \"{remote_name}\" failed with error message:\n{process.stderr}')
+            f'Deleting path \"{path}\" failed with error message:\n{process.stderr}')
 
 
 def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE,
