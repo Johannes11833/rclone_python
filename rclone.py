@@ -16,7 +16,7 @@ class RemoteTypes(Enum):
     box = "box"
 
 
-def create(remote_name, remote_type: Union[str, RemoteTypes], client_id=None, client_secret=None):
+def create_remote(remote_name, remote_type: Union[str, RemoteTypes], client_id=None, client_secret=None):
     if isinstance(remote_type, RemoteTypes):
         remote_type = remote_type.value
 
@@ -65,6 +65,27 @@ def copy(remote_name: str, in_path: str, out_path: str, ignore_existing=False):
     else:
         _, err = process.communicate()
         raise Exception(f'Upload to remote \"{remote_name}\" failed with error message:\n{err.decode("utf-8")}')
+
+
+def purge(remote_name: str, path: str):
+    process = subprocess.run(f'rclone purge {remote_name}:{path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             shell=True)
+    if process.returncode == os.EX_OK:
+        logging.info(f'Successfully deleted {path}')
+    else:
+        raise Exception(
+            f'Purging path \"{path}\" on remote \"{remote_name}\" failed with error message:\n{process.stderr}')
+
+
+def delete(remote_name: str, path: str, is_file=False):
+    command = 'deletefile' if is_file else 'delete'
+    process = subprocess.run(f'rclone {command} {remote_name}:{path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             shell=True)
+    if process.returncode == os.EX_OK:
+        logging.info(f'Successfully deleted {path}')
+    else:
+        raise Exception(
+            f'Deleting path \"{path}\" on remote \"{remote_name}\" failed with error message:\n{process.stderr}')
 
 
 def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE,
