@@ -23,7 +23,7 @@ def create(remote_name, remote_type: Union[str, RemoteTypes], client_id=None, cl
     if not _check_installed:
         raise Exception('rclone is not installed on this system. Please install it here: https://rclone.org/')
 
-    if _check_remote_existing(remote_name):
+    if not _check_remote_existing(remote_name):
         # setup is not yet complete
 
         # set up the selected cloud
@@ -60,10 +60,11 @@ def copy(remote_name: str, in_path: str, out_path: str, ignore_existing=False):
     # execute the upload command
     process = _rclone_progress(command, f'Uploading to {remote_name}')
 
-    if process.returncode == os.EX_OK:
+    if process.wait() == os.EX_OK:
         logging.info('Cloud upload completed.')
     else:
-        raise Exception(f'Cloud upload failed with error message:\n{process.stderr}')
+        _, err = process.communicate()
+        raise Exception(f'Upload to remote \"{remote_name}\" failed with error message:\n{err.decode("utf-8")}')
 
 
 def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE,
@@ -98,8 +99,6 @@ def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE,
                     reg = re.findall('[0-9]+%', transferred_lines[0])
                     progress = int(reg[-1][:-1]) if reg else progress
                     pbar(progress / 100.0)
-
-    process.communicate()
 
     return process
 
