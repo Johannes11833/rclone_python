@@ -1,4 +1,4 @@
-from src.rclone_python import rclone
+from rclone_python import rclone
 
 if __name__ == '__main__':
     # rclone.create('onedrive', rclone.RemoteTypes.onedrive)
