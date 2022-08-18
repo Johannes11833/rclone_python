@@ -28,7 +28,7 @@ from py_rclone.remote_types import RemoteTypes
 rclone.create_remote('onedrive', RemoteTypes.onedrive)
 ```
 
-Additionally, client-id and client-secret can be used with many ckoud providers.
+Additionally, client-id and client-secret can be used with many cloud providers.
 
 ```python
 from py_rclone import rclone
