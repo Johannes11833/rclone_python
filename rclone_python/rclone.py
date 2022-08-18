@@ -17,12 +17,21 @@ class RemoteTypes(Enum):
     box = "box"
 
 
+def check_installed(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if which('rclone') is None:
+            raise Exception('rclone is not installed on this system. Please install it here: https://rclone.org/')
+
+        func(*args, **kwargs)
+
+    return wrapper
+
+
+@check_installed
 def create_remote(remote_name, remote_type: Union[str, RemoteTypes], client_id=None, client_secret=None):
     if isinstance(remote_type, RemoteTypes):
         remote_type = remote_type.value
-
-    if not _check_installed:
-        raise Exception('rclone is not installed on this system. Please install it here: https://rclone.org/')
 
     if not _check_remote_existing(remote_name):
         # setup is not yet complete
@@ -46,17 +55,6 @@ def create_remote(remote_name, remote_type: Union[str, RemoteTypes], client_id=N
         raise Exception(f'A rclone remote with the name \'{remote_name}\' already exists!')
 
 
-def check_installed(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if not _check_installed():
-            raise Exception('rclone is not installed on this system. Please install it here: https://rclone.org/')
-
-        func(*args, **kwargs)
-
-    return wrapper
-
-
 def copy(in_path: str, out_path: str, ignore_existing=False, remote_name_src=None, remote_name_dest=None):
     _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=False,
                remote_name_src=remote_name_src, remote_name_dest=remote_name_dest)
@@ -70,6 +68,9 @@ def move(in_path: str, out_path: str, ignore_existing=False, remote_name_src=Non
 @check_installed
 def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=False,
                remote_name_src=None, remote_name_dest=None):
+    rclone_path_in = _get_rclone_path(remote_name_src, in_path)
+    rclone_path_out = _get_rclone_path(remote_name_dest, out_path)
+
     if move_files:
         command = f'rclone move'
         prog_title = f'Moving from {in_path} to {remote_name_dest}'
@@ -83,9 +84,9 @@ def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=Fa
     command += ' --progress'
 
     # in path
-    command += f' {_get_rclone_path(remote_name_src, in_path)}'
+    command += f' {rclone_path_in}'
     # out path
-    command += f' {_get_rclone_path(remote_name_dest, out_path)}'
+    command += f' {rclone_path_out}'
 
     # execute the upload command
     process = _rclone_progress(command, prog_title)
@@ -94,7 +95,8 @@ def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=Fa
         logging.info('Cloud upload completed.')
     else:
         _, err = process.communicate()
-        raise Exception(f'Upload to remote \"{remote_name_dest}\" failed with error message:\n{err.decode("utf-8")}')
+        raise Exception(f'Copy/Move operation from {rclone_path_in} to {rclone_path_out}'
+                        f' failed with error message:\n{err.decode("utf-8")}')
 
 
 @check_installed
@@ -159,10 +161,6 @@ def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE,
 def _get_rclone_path(remote_name, path):
     # add the remote name with a ':' in front of the path if it is set
     return f'\"{remote_name + ":" if remote_name else ""}{path}\"'
-
-
-def _check_installed() -> bool:
-    return which('rclone') is not None
 
 
 def _check_remote_existing(remote_name: str) -> bool:
