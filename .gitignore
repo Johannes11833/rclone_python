@@ -1,2 +1,5 @@
 /.idea/
 /data/
+/build/
+/dist/
+rclone_python.egg-info/
