@@ -3,6 +3,7 @@ import os
 import re
 import subprocess
 from enum import Enum
+from functools import wraps
 from shutil import which
 from typing import Union
 
@@ -45,28 +46,58 @@ def create_remote(remote_name, remote_type: Union[str, RemoteTypes], client_id=N
         raise Exception(f'A rclone remote with the name \'{remote_name}\' already exists!')
 
 
-def copy(remote_name: str, in_path: str, out_path: str, ignore_existing=False):
-    if not _check_remote_existing(remote_name):
-        raise Exception(f'The rclone remote \'{remote_name}\' does not exist!')
+def check_installed(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if not _check_installed():
+            raise Exception('rclone is not installed on this system. Please install it here: https://rclone.org/')
 
-    command = f'rclone copy --progress'
+        func(*args, **kwargs)
 
-    # add flags
+    return wrapper
+
+
+def copy(in_path: str, out_path: str, ignore_existing=False, remote_name_src=None, remote_name_dest=None):
+    _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=False,
+               remote_name_src=remote_name_src, remote_name_dest=remote_name_dest)
+
+
+def move(in_path: str, out_path: str, ignore_existing=False, remote_name_src=None, remote_name_dest=None):
+    _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=True,
+               remote_name_src=remote_name_src, remote_name_dest=remote_name_dest)
+
+
+@check_installed
+def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=False,
+               remote_name_src=None, remote_name_dest=None):
+    if move_files:
+        command = f'rclone move'
+        prog_title = f'Moving from {in_path} to {remote_name_dest}'
+    else:
+        command = f'rclone copy'
+        prog_title = f'Copying from {in_path} to {remote_name_dest}'
+
+    # add global rclone flags
     if ignore_existing:
         command += ' --ignore-existing'
+    command += ' --progress'
 
-    command += f' \"{in_path}\" \"{remote_name}:{out_path}\"'
+    # in path
+    command += f' {_get_rclone_path(remote_name_src, in_path)}'
+    # out path
+    command += f' {_get_rclone_path(remote_name_dest, out_path)}'
 
     # execute the upload command
-    process = _rclone_progress(command, f'Uploading to {remote_name}')
+    process = _rclone_progress(command, prog_title)
 
     if process.wait() == os.EX_OK:
         logging.info('Cloud upload completed.')
     else:
         _, err = process.communicate()
-        raise Exception(f'Upload to remote \"{remote_name}\" failed with error message:\n{err.decode("utf-8")}')
+        raise Exception(f'Upload to remote \"{remote_name_dest}\" failed with error message:\n{err.decode("utf-8")}')
 
 
+@check_installed
 def purge(remote_name: str, path: str):
     process = subprocess.run(f'rclone purge {remote_name}:{path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              shell=True)
@@ -77,6 +108,7 @@ def purge(remote_name: str, path: str):
             f'Purging path \"{path}\" on remote \"{remote_name}\" failed with error message:\n{process.stderr}')
 
 
+@check_installed
 def delete(remote_name: str, path: str, is_file=False):
     command = 'deletefile' if is_file else 'delete'
     process = subprocess.run(f'rclone {command} {remote_name}:{path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -122,6 +154,11 @@ def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE,
                     pbar(progress / 100.0)
 
     return process
+
+
+def _get_rclone_path(remote_name, path):
+    # add the remote name with a ':' in front of the path if it is set
+    return f'\"{remote_name + ":" if remote_name else ""}{path}\"'
 
 
 def _check_installed() -> bool:
