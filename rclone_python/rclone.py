@@ -2,38 +2,44 @@ import logging
 import os
 import re
 import subprocess
-from enum import Enum
 from functools import wraps
 from shutil import which
-from typing import Union
+from typing import Union, List
 
 from alive_progress import alive_bar
 
-
-class RemoteTypes(Enum):
-    google = "drive"
-    dropbox = "dropbox"
-    onedrive = "onedrive"
-    box = "box"
+from rclone_python.remote_types import RemoteTypes
 
 
-def check_installed(func):
+def __check_installed(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if which('rclone') is None:
             raise Exception('rclone is not installed on this system. Please install it here: https://rclone.org/')
 
-        func(*args, **kwargs)
+        return func(*args, **kwargs)
 
     return wrapper
 
 
-@check_installed
+@__check_installed
+def check_remote_existing(remote_name: str) -> bool:
+    # get the available remotes
+    remotes = get_remotes()
+
+    # add the trailing ':' if it is missing
+    if not remote_name.endswith(':'):
+        remote_name = f'{remote_name}:'
+
+    return remote_name in remotes
+
+
+@__check_installed
 def create_remote(remote_name, remote_type: Union[str, RemoteTypes], client_id=None, client_secret=None):
     if isinstance(remote_type, RemoteTypes):
         remote_type = remote_type.value
 
-    if not _check_remote_existing(remote_name):
+    if not check_remote_existing(remote_name):
         # set up the selected cloud
         command = f"rclone config create \"{remote_name}\" {remote_type}"
 
@@ -53,28 +59,22 @@ def create_remote(remote_name, remote_type: Union[str, RemoteTypes], client_id=N
         raise Exception(f'A rclone remote with the name \'{remote_name}\' already exists!')
 
 
-def copy(in_path: str, out_path: str, ignore_existing=False, remote_name_src=None, remote_name_dest=None):
-    _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=False,
-               remote_name_src=remote_name_src, remote_name_dest=remote_name_dest)
+def copy(in_path: str, out_path: str, ignore_existing=False):
+    _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=False)
 
 
-def move(in_path: str, out_path: str, ignore_existing=False, remote_name_src=None, remote_name_dest=None):
-    _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=True,
-               remote_name_src=remote_name_src, remote_name_dest=remote_name_dest)
+def move(in_path: str, out_path: str, ignore_existing=False):
+    _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=True)
 
 
-@check_installed
-def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=False,
-               remote_name_src=None, remote_name_dest=None):
-    rclone_path_in = _get_rclone_path(remote_name_src, in_path)
-    rclone_path_out = _get_rclone_path(remote_name_dest, out_path)
-
+@__check_installed
+def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=False):
     if move_files:
         command = f'rclone move'
-        prog_title = f'Moving from {rclone_path_in} to {rclone_path_out}'
+        prog_title = f'Moving from {in_path} to {out_path}'
     else:
         command = f'rclone copy'
-        prog_title = f'Copying from {rclone_path_in} to {rclone_path_out}'
+        prog_title = f'Copying from {in_path} to {out_path}'
 
     # add global rclone flags
     if ignore_existing:
@@ -82,9 +82,9 @@ def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=Fa
     command += ' --progress'
 
     # in path
-    command += f' {rclone_path_in}'
+    command += f' {in_path}'
     # out path
-    command += f' {rclone_path_out}'
+    command += f' {out_path}'
 
     # execute the upload command
     process = _rclone_progress(command, prog_title)
@@ -93,11 +93,22 @@ def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=Fa
         logging.info('Cloud upload completed.')
     else:
         _, err = process.communicate()
-        raise Exception(f'Copy/Move operation from {rclone_path_in} to {rclone_path_out}'
+        raise Exception(f'Copy/Move operation from {in_path} to {out_path}'
                         f' failed with error message:\n{err.decode("utf-8")}')
 
 
-@check_installed
+@__check_installed
+def get_remotes() -> List[str]:
+    remotes = subprocess.check_output('rclone listremotes', shell=True, encoding='UTF-8').split()
+    if remotes is None:
+        remotes = []
+
+    print(remotes)
+
+    return remotes
+
+
+@__check_installed
 def purge(remote_name: str, path: str):
     process = subprocess.run(f'rclone purge {remote_name}:{path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              shell=True)
@@ -108,7 +119,7 @@ def purge(remote_name: str, path: str):
             f'Purging path \"{path}\" on remote \"{remote_name}\" failed with error message:\n{process.stderr}')
 
 
-@check_installed
+@__check_installed
 def delete(remote_name: str, path: str, is_file=False):
     command = 'deletefile' if is_file else 'delete'
     process = subprocess.run(f'rclone {command} {remote_name}:{path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -154,14 +165,3 @@ def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE,
                     pbar(progress / 100.0)
 
     return process
-
-
-def _get_rclone_path(remote_name, path):
-    # add the remote name with a ':' in front of the path if it is set
-    return f'\"{remote_name + ":" if remote_name else ""}{path}\"'
-
-
-def _check_remote_existing(remote_name: str) -> bool:
-    # get the available remotes
-    remotes = subprocess.check_output('rclone listremotes', shell=True, encoding='UTF-8').split()
-    return f"{remote_name}:" in remotes

@@ -7,5 +7,5 @@ setup(
     author='Johannes Gundlach',
     author_email='johannesgundlach97@gmail.com',
     install_requires=['simple_term_menu', 'alive-progress', ],
-    packages=['rclone_python', 'utils'],
+    packages=['rclone_python'],
 )
