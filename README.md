@@ -1,7 +1,7 @@
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![PyPI version](https://badge.fury.io/py/rclone-python.svg)](https://badge.fury.io/py/rclone-python)
 
-# rclone-python
+# ☁ rclone-python ☁️
 
 A python wrapper for rclone that makes rclone's functionality usable in python.
 rclone needs to be installed on the system for the wrapper to work.

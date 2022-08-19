@@ -10,6 +10,7 @@ setup(
     version=VERSION,
     description='A python wrapper for rclone.',
     author='Johannes Gundlach',
+    url='https://github.com/Johannes11833/rclone_python',
     install_requires=['alive-progress'],
     packages=['rclone_python'],
     long_description=long_description,
