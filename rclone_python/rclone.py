@@ -8,7 +8,7 @@ from typing import Union, List
 
 from alive_progress import alive_bar
 
-from py_rclone.remote_types import RemoteTypes
+from rclone_python.remote_types import RemoteTypes
 
 
 def __check_installed(func):

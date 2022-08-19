@@ -1,6 +1,6 @@
 from setuptools import setup
 
-from py_rclone import VERSION
+from rclone_python import VERSION
 
 with open("README.md", 'r') as f:
     long_description = f.read()
@@ -11,7 +11,7 @@ setup(
     description='A python wrapper for rclone.',
     author='Johannes Gundlach',
     install_requires=['alive-progress'],
-    packages=['py_rclone'],
+    packages=['rclone_python'],
     long_description=long_description,
     long_description_content_type="text/markdown",
     keywords=['rclone', 'wrapper', 'cloud sync'],
