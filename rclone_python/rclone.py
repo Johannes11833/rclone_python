@@ -75,10 +75,10 @@ def move(in_path: str, out_path: str, ignore_existing=False):
 def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=False):
     if move_files:
         command = f'rclone move'
-        prog_title = f'Moving from {in_path} to {out_path}'
+        prog_title = f'Moving'
     else:
         command = f'rclone copy'
-        prog_title = f'Copying from {in_path} to {out_path}'
+        prog_title = f'Copying'
 
     # add global rclone flags
     if ignore_existing:
@@ -117,7 +117,7 @@ def purge(path: str):
     process = subprocess.run(f'rclone purge {path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              shell=True)
     if process.returncode == os.EX_OK:
-        logging.info(f'Successfully deleted {path}')
+        logging.info(f'Successfully purged {path}')
     else:
         raise Exception(
             f'Purging path \"{path}\" failed with error message:\n{process.stderr}')
@@ -141,31 +141,39 @@ def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE,
 
     progress = 0
     buffer = ""
-    with alive_bar(manual=True, dual_line=True) as pbar:
-        pbar.title = pbar_title
+    with alive_bar(manual=True, dual_line=True, stats=False) as pbar:
+        if pbar_title:
+            pbar.title = pbar_title
+
         for c in iter(lambda: process.stdout.read(1), b''):
             var = c.decode('utf-8')
             if '\n' not in var:
                 buffer += var
             else:
-                # matcher that finds the line with transferred update that includes the total progress
-                transferred_block = re.findall(r'Transferred:(?:.|\n)+ETA \d+s', buffer)
+                # matcher that checks if the progress update block is completely buffered yet (defines start and stop)
+                reg_block = re.findall(r'Transferred:(?:.|\n)+ETA \d+s', buffer)
 
-                # update the progress
-                if transferred_block:  # transferred block is completely buffered
-                    transferred_block = transferred_block[0]
+                if reg_block:  # transferred block is completely buffered
+                    transferred_block = reg_block[0]
 
-                    # matcher that finds the transferred line with the total progress
-                    transferred_lines = re.findall(r'Transferred.*\ds', transferred_block)
+                    # matcher for the currently transferring files and their individual progress
+                    reg_transferring_names = re.findall(r'\* +(\S+):[ ]+(\d{1,2})%', transferred_block)
+                    str_transferring = ''
+                    for f_name, f_prog in reg_transferring_names:
+                        str_transferring += f'{f_name} ({f_prog}%),'
+                    pbar.text = f"-> Currently transferring {str_transferring.removesuffix(',')}"
 
-                    # matcher for the currently transferring files
-                    transferring_files = re.findall(r'\* +(\S+):', transferred_block)
-                    pbar.text = f"-> Currently processing {', '.join(transferring_files)}"
+                    # matcher that gets sent bits, total bits, progress, transfer-speed and eta
+                    reg_transferred = re.findall(
+                        r'Transferred:\s+(\d+.\d+ \w+) \/ (\d+.\d+ \w+), (\d{1,3})%, (\d+.\d+ \w+\/\w+), ETA (\d+s)',
+                        transferred_block)
+                    sent_bits, total_bits, progress, transfer_speed, eta = reg_transferred[0]
+                    pbar(int(progress) / 100.0)
+                    pbar.title = f'{pbar_title} {sent_bits}/{total_bits}'
+                    pbar.stats = '{rate}'
 
+                    # reset the buffer
                     buffer = ""
-                    reg = re.findall('[0-9]+%', transferred_lines[0])
-                    progress = int(reg[-1][:-1]) if reg else progress
-                    pbar(progress / 100.0)
 
         pbar(1)
     return process
