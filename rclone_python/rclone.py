@@ -14,12 +14,16 @@ from rclone_python.remote_types import RemoteTypes
 def __check_installed(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if which('rclone') is None:
+        if not is_installed:
             raise Exception('rclone is not installed on this system. Please install it here: https://rclone.org/')
 
         return func(*args, **kwargs)
 
     return wrapper
+
+
+def is_installed() -> bool:
+    return which('rclone') is not None
 
 
 @__check_installed

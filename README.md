@@ -1,21 +1,45 @@
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![PyPI version](https://badge.fury.io/py/rclone-python.svg)](https://badge.fury.io/py/rclone-python)
 
-# ☁ rclone-python ☁️
+# rclone-python ☁️
 
 A python wrapper for rclone that makes rclone's functionality usable in python.
 rclone needs to be installed on the system for the wrapper to work.
 
 ![demo gif](https://raw.githubusercontent.com/Johannes11833/rclone_python/master/demo/demo.gif)
 
-## Features
+## Features ⚒️
 
 - Copy and move files between remotes
 - Delete and prune files/directories
 - Create new remotes
 - Check available remotes
 
-## Demo
+## Installation 💾
+
+_rclone_python_ can be installed using pip
+
+```shell
+pip install rclone-python
+```
+
+or by cloning this repository and running from within the root of the project
+
+```shell
+pip install .
+```
+
+## How to use 💡
+
+All functionally of this wrapper is accessible through `rclone`.
+The following example checks if rclone is installed.
+
+```python
+from rclone_python import rclone
+
+print(rclone.is_installed())
+# True
+```
 
 ### Create new remote
 
@@ -44,9 +68,9 @@ from rclone_python import rclone
 
 # copy all file in the test_dir on OneDrive to the local data folder.
 rclone.copy('onedrive:test_dir', 'data')
-```
+# Copying from onedrive:test_dir to data |████████████████████████████████████████| 100% in 18.0s (5.56%/s)
 
-Copying from onedrive:test_dir to data |████████████████████████████████████████| 100% in 18.0s (5.56%/s)
+```
 
 ### Delete
 
