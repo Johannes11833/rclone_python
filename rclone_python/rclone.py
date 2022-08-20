@@ -208,10 +208,13 @@ def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE, show
                 # reset the buffer
                 buffer = ""
 
-    if show_progress and not pbar.total:
-        # if no data is downloaded/ upload because the data is already present: manually set progress to 100%
-        pbar.total = 1
-        pbar.update()
+    if show_progress:
+        if not pbar.total:
+            # if no data is downloaded/ upload because the data is already present: manually set progress to 100%
+            pbar.total = 1
+            pbar.update()
+        pbar.close()
+
     return process
 
 
