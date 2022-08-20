@@ -23,11 +23,19 @@ def __check_installed(func):
 
 
 def is_installed() -> bool:
+    """
+    :return: True if rclone is correctly installed on the system.
+    """
     return which('rclone') is not None
 
 
 @__check_installed
 def check_remote_existing(remote_name: str) -> bool:
+    """
+    Returns True, if the specified rclone remote is already configured.
+    :param remote_name: The name of the remote to check.
+    :return: True if the remote exists, False otherwise.
+    """
     # get the available remotes
     remotes = get_remotes()
 
@@ -64,11 +72,68 @@ def create_remote(remote_name, remote_type: Union[str, RemoteTypes], client_id=N
 
 
 def copy(in_path: str, out_path: str, ignore_existing=False, listener: Callable[[Dict], None] = None):
+    """
+    Copies a file or a directory from a src path to a destination path.
+    :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param out_path: The destination path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param ignore_existing: If True, all existing files are ignored and not overwritten.
+    :param listener: An event-listener that is called with every update of rclone.
+    """
     _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=False, listener=listener)
 
 
 def move(in_path: str, out_path: str, ignore_existing=False, listener: Callable[[Dict], None] = None):
+    """
+    Moves a file or a directory from a src path to a destination path.
+    :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param out_path: The destination path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param ignore_existing: If True, all existing files are ignored and not overwritten.
+    :param listener: An event-listener that is called with every update of rclone.
+    """
     _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=True, listener=listener)
+
+
+@__check_installed
+def get_remotes() -> List[str]:
+    remotes = subprocess.check_output('rclone listremotes', shell=True, encoding='UTF-8').split()
+    if remotes is None:
+        remotes = []
+
+    print(remotes)
+
+    return remotes
+
+
+@__check_installed
+def purge(path: str):
+    """
+    Purges the specified folder. This means that unlike with delete, also all the folders are removed.
+    :param path: The path of the folder that should be purged.
+    """
+    process = subprocess.run(f'rclone purge {path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             shell=True)
+    if process.returncode == os.EX_OK:
+        logging.info(f'Successfully purged {path}')
+    else:
+        raise Exception(
+            f'Purging path \"{path}\" failed with error message:\n{process.stderr}')
+
+
+@__check_installed
+def delete(path: str):
+    """
+    Deletes a file or a folder. When deleting a folder, all the files in it and it's subdirectories are removed,
+    but not the folder structure itself.
+    :param path: The path of the folder that should be deleted.
+    """
+    command = 'delete'
+    process = subprocess.run(f'rclone {command} {path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             shell=True)
+    if process.returncode == os.EX_OK:
+        logging.info(f'Successfully deleted {path}')
+    else:
+        raise Exception(
+            f'Deleting path \"{path}\" failed with error message:\n{process.stderr}')
 
 
 @__check_installed
@@ -100,40 +165,6 @@ def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=Fa
         _, err = process.communicate()
         raise Exception(f'Copy/Move operation from {in_path} to {out_path}'
                         f' failed with error message:\n{err.decode("utf-8")}')
-
-
-@__check_installed
-def get_remotes() -> List[str]:
-    remotes = subprocess.check_output('rclone listremotes', shell=True, encoding='UTF-8').split()
-    if remotes is None:
-        remotes = []
-
-    print(remotes)
-
-    return remotes
-
-
-@__check_installed
-def purge(path: str):
-    process = subprocess.run(f'rclone purge {path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             shell=True)
-    if process.returncode == os.EX_OK:
-        logging.info(f'Successfully purged {path}')
-    else:
-        raise Exception(
-            f'Purging path \"{path}\" failed with error message:\n{process.stderr}')
-
-
-@__check_installed
-def delete(path: str):
-    command = 'delete'
-    process = subprocess.run(f'rclone {command} {path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             shell=True)
-    if process.returncode == os.EX_OK:
-        logging.info(f'Successfully deleted {path}')
-    else:
-        raise Exception(
-            f'Deleting path \"{path}\" failed with error message:\n{process.stderr}')
 
 
 def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE,
