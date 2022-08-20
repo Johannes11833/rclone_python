@@ -1,5 +1,4 @@
 import logging
-import os
 import re
 import subprocess
 from functools import wraps
@@ -71,26 +70,32 @@ def create_remote(remote_name, remote_type: Union[str, RemoteTypes], client_id=N
         raise Exception(f'A rclone remote with the name \'{remote_name}\' already exists!')
 
 
-def copy(in_path: str, out_path: str, ignore_existing=False, listener: Callable[[Dict], None] = None):
+def copy(in_path: str, out_path: str, ignore_existing=False, show_progress=True,
+         listener: Callable[[Dict], None] = None):
     """
     Copies a file or a directory from a src path to a destination path.
     :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
     :param out_path: The destination path to use. Specify the remote with 'remote_name:path_on_remote'
     :param ignore_existing: If True, all existing files are ignored and not overwritten.
+    :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     """
-    _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=False, listener=listener)
+    _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=False, show_progress=show_progress,
+               listener=listener)
 
 
-def move(in_path: str, out_path: str, ignore_existing=False, listener: Callable[[Dict], None] = None):
+def move(in_path: str, out_path: str, ignore_existing=False, show_progress=True,
+         listener: Callable[[Dict], None] = None):
     """
     Moves a file or a directory from a src path to a destination path.
     :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
     :param out_path: The destination path to use. Specify the remote with 'remote_name:path_on_remote'
     :param ignore_existing: If True, all existing files are ignored and not overwritten.
+    :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     """
-    _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=True, listener=listener)
+    _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=True, show_progress=show_progress,
+               listener=listener)
 
 
 @__check_installed
@@ -115,7 +120,7 @@ def purge(path: str):
     """
     process = subprocess.run(f'rclone purge {path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              shell=True)
-    if process.returncode == os.EX_OK:
+    if process.returncode == 0:
         logging.info(f'Successfully purged {path}')
     else:
         raise Exception(
@@ -132,7 +137,7 @@ def delete(path: str):
     command = 'delete'
     process = subprocess.run(f'rclone {command} {path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              shell=True)
-    if process.returncode == os.EX_OK:
+    if process.returncode == 0:
         logging.info(f'Successfully deleted {path}')
     else:
         raise Exception(
@@ -140,7 +145,7 @@ def delete(path: str):
 
 
 @__check_installed
-def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=False,
+def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=False, show_progress=True,
                listener: Callable[[Dict], None] = None):
     if move_files:
         command = f'rclone move'
@@ -160,9 +165,9 @@ def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=Fa
     command += f' {out_path}'
 
     # execute the upload command
-    process = _rclone_progress(command, prog_title, listener=listener)
+    process = _rclone_progress(command, prog_title, listener=listener, show_progress=show_progress)
 
-    if process.wait() == os.EX_OK:
+    if process.wait() == 0:
         logging.info('Cloud upload completed.')
     else:
         _, err = process.communicate()
@@ -170,40 +175,43 @@ def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=Fa
                         f' failed with error message:\n{err.decode("utf-8")}')
 
 
-def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE,
+def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE, show_progress=True,
                      listener: Callable[[Dict], None] = None) -> subprocess.Popen:
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=stderr, shell=True)
 
     buffer = ""
+    pbar = None
 
-    with tqdm(bar_format='{l_bar}{bar}| {n:.1f}/{total_fmt} {unit}{postfix}') as pbar:
-        pbar.set_description(pbar_title)
+    if show_progress:
+        pbar = tqdm(bar_format='{l_bar}{bar}| {n:.1f}/{total_fmt} {unit}{postfix}')
+        pbar.set_description(f'☁ {pbar_title}')
 
-        for c in iter(lambda: process.stdout.read(1), b''):
-            var = c.decode('utf-8')
-            if '\n' not in var:
-                buffer += var
-            else:
-                valid, update_dict = _extract_rclone_progress(buffer)
+    for c in iter(lambda: process.stdout.read(1), b''):
+        var = c.decode('utf-8')
+        if '\n' not in var:
+            buffer += var
+        else:
+            valid, update_dict = _extract_rclone_progress(buffer)
 
-                if valid:
+            if valid:
+                if show_progress:
                     pbar.set_postfix_str(f'{update_dict["transfer_speed"]:.1f} {update_dict["transfer_speed_unit"]}, '
                                          f'ETA: {update_dict["eta"]}')
                     pbar.total = update_dict['total_bits']
                     pbar.unit = update_dict['unit_total']
                     pbar.update(update_dict['sent_bits'] - pbar.n, )
 
-                    # call the listener
-                    if listener:
-                        listener(update_dict)
+                # call the listener
+                if listener:
+                    listener(update_dict)
 
-                    # reset the buffer
-                    buffer = ""
+                # reset the buffer
+                buffer = ""
 
-        if not pbar.total:
-            # if no data is downloaded/ upload because the data is already present: manually set progress to 100%
-            pbar.total = 1
-            pbar.update()
+    if show_progress and not pbar.total:
+        # if no data is downloaded/ upload because the data is already present: manually set progress to 100%
+        pbar.total = 1
+        pbar.update()
     return process
 
 
