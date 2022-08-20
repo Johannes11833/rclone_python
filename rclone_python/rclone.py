@@ -4,9 +4,9 @@ import re
 import subprocess
 from functools import wraps
 from shutil import which
-from typing import Union, List
+from typing import Union, List, Dict, Tuple, Callable
 
-from alive_progress import alive_bar
+from tqdm import tqdm
 
 from rclone_python.remote_types import RemoteTypes
 
@@ -63,16 +63,17 @@ def create_remote(remote_name, remote_type: Union[str, RemoteTypes], client_id=N
         raise Exception(f'A rclone remote with the name \'{remote_name}\' already exists!')
 
 
-def copy(in_path: str, out_path: str, ignore_existing=False):
-    _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=False)
+def copy(in_path: str, out_path: str, ignore_existing=False, listener: Callable[[Dict], None] = None):
+    _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=False, listener=listener)
 
 
-def move(in_path: str, out_path: str, ignore_existing=False):
-    _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=True)
+def move(in_path: str, out_path: str, ignore_existing=False, listener: Callable[[Dict], None] = None):
+    _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=True, listener=listener)
 
 
 @__check_installed
-def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=False):
+def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=False,
+               listener: Callable[[Dict], None] = None):
     if move_files:
         command = f'rclone move'
         prog_title = f'Moving'
@@ -91,7 +92,7 @@ def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=Fa
     command += f' {out_path}'
 
     # execute the upload command
-    process = _rclone_progress(command, prog_title)
+    process = _rclone_progress(command, prog_title, listener=listener)
 
     if process.wait() == os.EX_OK:
         logging.info('Cloud upload completed.')
@@ -136,44 +137,69 @@ def delete(path: str):
 
 
 def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE,
-                     **kwargs) -> subprocess.Popen:
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=stderr, shell=True, **kwargs)
+                     listener: Callable[[Dict], None] = None) -> subprocess.Popen:
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=stderr, shell=True)
 
-    progress = 0
     buffer = ""
-    with alive_bar(manual=True, dual_line=True, stats=False) as pbar:
-        if pbar_title:
-            pbar.title = pbar_title
+
+    with tqdm(bar_format='{l_bar}{bar}| {n:.1f}/{total_fmt} {unit}{postfix}') as pbar:
+        pbar.set_description(pbar_title)
 
         for c in iter(lambda: process.stdout.read(1), b''):
             var = c.decode('utf-8')
             if '\n' not in var:
                 buffer += var
             else:
-                # matcher that checks if the progress update block is completely buffered yet (defines start and stop)
-                reg_block = re.findall(r'Transferred:(?:.|\n)+ETA \d+s', buffer)
+                valid, update_dict = _extract_rclone_progress(buffer)
 
-                if reg_block:  # transferred block is completely buffered
-                    transferred_block = reg_block[0]
+                if valid:
+                    pbar.set_postfix_str(f'{update_dict["transfer_speed"]:.1f} {update_dict["transfer_speed_unit"]}, '
+                                         f'ETA: {update_dict["eta"]}')
+                    pbar.total = update_dict['total_bits']
+                    pbar.unit = update_dict['unit_total']
+                    pbar.update(update_dict['sent_bits'] - pbar.n, )
 
-                    # matcher for the currently transferring files and their individual progress
-                    reg_transferring_names = re.findall(r'\* +(\S+):[ ]+(\d{1,2})%', transferred_block)
-                    str_transferring = ''
-                    for f_name, f_prog in reg_transferring_names:
-                        str_transferring += f'{f_name} ({f_prog}%),'
-                    pbar.text = f"-> Currently transferring {str_transferring.removesuffix(',')}"
-
-                    # matcher that gets sent bits, total bits, progress, transfer-speed and eta
-                    reg_transferred = re.findall(
-                        r'Transferred:\s+(\d+.\d+ \w+) \/ (\d+.\d+ \w+), (\d{1,3})%, (\d+.\d+ \w+\/\w+), ETA (\d+s)',
-                        transferred_block)
-                    sent_bits, total_bits, progress, transfer_speed, eta = reg_transferred[0]
-                    pbar(int(progress) / 100.0)
-                    pbar.title = f'{pbar_title} {sent_bits}/{total_bits}'
-                    pbar.stats = '{rate}'
+                    # call the listener
+                    if listener:
+                        listener(update_dict)
 
                     # reset the buffer
                     buffer = ""
 
-        pbar(1)
+        if not pbar.total:
+            # if no data is downloaded/ upload because the data is already present: manually set progress to 100%
+            pbar.total = 1
+            pbar.update()
     return process
+
+
+def _extract_rclone_progress(buffer: str) -> Tuple:
+    reg_block = re.findall(r'Transferred:(?:.|\n)+ETA \d+s', buffer)
+
+    # matcher that checks if the progress update block is completely buffered yet (defines start and stop)
+
+    if reg_block:  # transferred block is completely buffered
+        out = {}
+        transferred_block = reg_block[0]
+
+        # matcher for the currently transferring files and their individual progress
+        # returns list of tuples: (name, progress)
+        out['prog_transferring'] = re.findall(r'\* +(\S+):[ ]+(\d{1,2})%', transferred_block)
+
+        # matcher that gets sent bits, total bits, progress, transfer-speed and eta
+        reg_transferred = re.findall(
+            r'Transferred:\s+(\d+.\d+ \w+) \/ (\d+.\d+ \w+), (\d{1,3})%, (\d+.\d+ \w+\/\w+), ETA (\d+s)',
+            transferred_block)
+        sent_bits, total_bits, progress, transfer_speed_str, eta = reg_transferred[0]
+        out['total_bits'] = float(re.findall(r'\d+.\d+', total_bits)[0])
+        out['sent_bits'] = float(re.findall(r'\d+.\d+', sent_bits)[0])
+        out['unit_sent'] = re.findall(r'[a-zA-Z]+', sent_bits)[0]
+        out['unit_total'] = re.findall(r'[a-zA-Z]+', total_bits)[0]
+        out['transfer_speed'] = float(re.findall(r'\d+.\d+', transfer_speed_str)[0])
+        out['transfer_speed_unit'] = re.findall(r'[a-zA-Z]+/[a-zA-Z]+', transfer_speed_str)[0]
+        out['eta'] = eta
+
+        return True, out
+
+    else:
+        return False, None

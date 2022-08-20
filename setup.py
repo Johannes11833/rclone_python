@@ -11,7 +11,7 @@ setup(
     description='A python wrapper for rclone.',
     author='Johannes Gundlach',
     url='https://github.com/Johannes11833/rclone_python',
-    install_requires=['alive-progress'],
+    install_requires=['tqdm'],
     packages=['rclone_python'],
     long_description=long_description,
     long_description_content_type="text/markdown",
