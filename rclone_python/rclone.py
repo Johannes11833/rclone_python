@@ -95,6 +95,9 @@ def move(in_path: str, out_path: str, ignore_existing=False, listener: Callable[
 
 @__check_installed
 def get_remotes() -> List[str]:
+    """
+    :return: A list of all available remotes.
+    """
     remotes = subprocess.check_output('rclone listremotes', shell=True, encoding='UTF-8').split()
     if remotes is None:
         remotes = []
