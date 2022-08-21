@@ -12,6 +12,8 @@ rclone needs to be installed on the system for the wrapper to work.
 
 - Copy and move files between remotes
 - Delete and prune files/directories
+- List files in a directory including properties of the files.
+- List available remotes.
 - Create new remotes
 - Check available remotes
 
