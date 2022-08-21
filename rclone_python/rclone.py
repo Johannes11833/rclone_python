@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 import subprocess
@@ -13,7 +14,7 @@ from rclone_python.remote_types import RemoteTypes
 def __check_installed(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not is_installed:
+        if not is_installed():
             raise Exception('rclone is not installed on this system. Please install it here: https://rclone.org/')
 
         return func(*args, **kwargs)
@@ -142,6 +143,27 @@ def delete(path: str):
     else:
         raise Exception(
             f'Deleting path \"{path}\" failed with error message:\n{process.stderr}')
+
+
+@__check_installed
+def ls(path: str, max_depth: Union[int, None] = None) -> List[Dict[str, Union[int, str]]]:
+    """
+    Lists the files in a directory.
+    :param path: The path to the folder that should be examined.
+    :param max_depth:
+    :return: List of dicts containing file properties.
+    """
+    command = f'rclone lsjson {path}'
+
+    if max_depth:
+        command += f" --max-depth {max_depth}"
+
+    process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding='utf-8')
+
+    if process.returncode == 0:
+        return json.loads(process.stdout)
+    else:
+        raise Exception(f'ls operation on {path} failed with {process.stderr}')
 
 
 @__check_installed
