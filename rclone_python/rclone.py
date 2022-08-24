@@ -8,6 +8,7 @@ from typing import Union, List, Dict, Tuple, Callable
 
 from tqdm import tqdm
 
+from rclone_python import utils
 from rclone_python.remote_types import RemoteTypes
 
 
@@ -146,19 +147,31 @@ def delete(path: str):
 
 
 @__check_installed
-def ls(path: str, max_depth: Union[int, None] = None) -> List[Dict[str, Union[int, str]]]:
+def ls(path: str, max_depth: Union[int, None] = None, dirs_only=False, files_only=False, args: List[str] = None) -> \
+        List[Dict[str, Union[int, str]]]:
     """
     Lists the files in a directory.
     :param path: The path to the folder that should be examined.
-    :param max_depth:
+    :param max_depth: The maximum depth for file search. If max_depth=1 only the files in the selected folder but not
+    in its subdirectories will be included.
+    :param files_only: If true only files will be returned.
+    :param dirs_only: If true, only dirs will be returned.
+    :param args: List of additional arguments/ flags.
     :return: List of dicts containing file properties.
     """
     command = f'rclone lsjson {path}'
+    if not args:
+        args = []
 
+    # add optional parameters
     if max_depth:
-        command += f" --max-depth {max_depth}"
+        args.append(f"--max-depth {max_depth}")
+    if dirs_only:
+        args.append(f"--dirs-only")
+    if files_only:
+        args.append('--files-only')
 
-    process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding='utf-8')
+    process = utils.run_cmd(command, args)
 
     if process.returncode == 0:
         return json.loads(process.stdout)
@@ -240,7 +253,7 @@ def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE, show
     return process
 
 
-def _extract_rclone_progress(buffer: str) -> Tuple:
+def _extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, bool], None]]:
     reg_block = re.findall(r'Transferred:(?:.|\n)+ETA \d+s', buffer)
 
     # matcher that checks if the progress update block is completely buffered yet (defines start and stop)
