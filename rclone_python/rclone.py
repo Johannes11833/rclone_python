@@ -64,16 +64,16 @@ def create_remote(remote_name, remote_type: Union[str, RemoteTypes], client_id=N
         else:
             logging.warning('The drive client id and the client secret have not been set. Using defaults.')
         # run the setup command
-        o = subprocess.run(command, shell=True, stderr=subprocess.PIPE)
+        process = utils.run_cmd(command)
 
-        if o.returncode != 0:
-            raise Exception(o.stderr)
+        if process.returncode != 0:
+            raise Exception(process.stderr)
     else:
         raise Exception(f'A rclone remote with the name \'{remote_name}\' already exists!')
 
 
 def copy(in_path: str, out_path: str, ignore_existing=False, show_progress=True,
-         listener: Callable[[Dict], None] = None):
+         listener: Callable[[Dict], None] = None, args=None):
     """
     Copies a file or a directory from a src path to a destination path.
     :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
@@ -81,13 +81,17 @@ def copy(in_path: str, out_path: str, ignore_existing=False, show_progress=True,
     :param ignore_existing: If True, all existing files are ignored and not overwritten.
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
+    :param args: List of additional arguments/ flags.
     """
+    if args is None:
+        args = []
+
     _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=False, show_progress=show_progress,
-               listener=listener)
+               listener=listener, args=args)
 
 
 def move(in_path: str, out_path: str, ignore_existing=False, show_progress=True,
-         listener: Callable[[Dict], None] = None):
+         listener: Callable[[Dict], None] = None, args=None):
     """
     Moves a file or a directory from a src path to a destination path.
     :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
@@ -95,9 +99,13 @@ def move(in_path: str, out_path: str, ignore_existing=False, show_progress=True,
     :param ignore_existing: If True, all existing files are ignored and not overwritten.
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
+    :param args: List of additional arguments/ flags.
     """
+    if args is None:
+        args = []
+
     _copy_move(in_path, out_path, ignore_existing=ignore_existing, move_files=True, show_progress=show_progress,
-               listener=listener)
+               listener=listener, args=args)
 
 
 @__check_installed
@@ -105,23 +113,26 @@ def get_remotes() -> List[str]:
     """
     :return: A list of all available remotes.
     """
-    remotes = subprocess.check_output('rclone listremotes', shell=True, encoding='UTF-8').split()
+    command = 'rclone listremotes'
+    remotes = utils.run_cmd(command).stdout.split()
     if remotes is None:
         remotes = []
-
-    print(remotes)
 
     return remotes
 
 
 @__check_installed
-def purge(path: str):
+def purge(path: str, args=None):
     """
     Purges the specified folder. This means that unlike with delete, also all the folders are removed.
+    :param args: List of additional arguments/ flags.
     :param path: The path of the folder that should be purged.
     """
-    process = subprocess.run(f'rclone purge {path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             shell=True)
+    if args is None:
+        args = []
+
+    command = f'rclone purge {path}'
+    process = utils.run_cmd(command, args)
     if process.returncode == 0:
         logging.info(f'Successfully purged {path}')
     else:
@@ -130,24 +141,27 @@ def purge(path: str):
 
 
 @__check_installed
-def delete(path: str):
+def delete(path: str, args=None):
     """
     Deletes a file or a folder. When deleting a folder, all the files in it and it's subdirectories are removed,
     but not the folder structure itself.
+    :param args: List of additional arguments/ flags.
     :param path: The path of the folder that should be deleted.
     """
-    command = 'delete'
-    process = subprocess.run(f'rclone {command} {path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             shell=True)
+    if args is None:
+        args = []
+
+    command = f'rclone delete {path}'
+    process = utils.run_cmd(command, args)
+
     if process.returncode == 0:
         logging.info(f'Successfully deleted {path}')
     else:
-        raise Exception(
-            f'Deleting path \"{path}\" failed with error message:\n{process.stderr}')
+        raise Exception(f'Deleting path \"{path}\" failed with error message:\n{process.stderr}')
 
 
 @__check_installed
-def ls(path: str, max_depth: Union[int, None] = None, dirs_only=False, files_only=False, args: List[str] = None) -> \
+def ls(path: str, max_depth: Union[int, None] = None, dirs_only=False, files_only=False, args=None) -> \
         List[Dict[str, Union[int, str]]]:
     """
     Lists the files in a directory.
@@ -159,9 +173,10 @@ def ls(path: str, max_depth: Union[int, None] = None, dirs_only=False, files_onl
     :param args: List of additional arguments/ flags.
     :return: List of dicts containing file properties.
     """
-    command = f'rclone lsjson {path}'
-    if not args:
+    if args is None:
         args = []
+
+    command = f'rclone lsjson {path}'
 
     # add optional parameters
     if max_depth:
@@ -181,7 +196,10 @@ def ls(path: str, max_depth: Union[int, None] = None, dirs_only=False, files_onl
 
 @__check_installed
 def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=False, show_progress=True,
-               listener: Callable[[Dict], None] = None):
+               listener: Callable[[Dict], None] = None, args=None):
+    if args is None:
+        args = []
+
     if move_files:
         command = f'rclone move'
         prog_title = f'Moving'
@@ -198,6 +216,9 @@ def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=Fa
     command += f' {in_path}'
     # out path
     command += f' {out_path}'
+
+    # optional named arguments/flags
+    command += utils.args2string(args)
 
     # execute the upload command
     process = _rclone_progress(command, prog_title, listener=listener, show_progress=show_progress)

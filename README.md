@@ -69,8 +69,8 @@ rclone.create_remote('onedrive', RemoteTypes.onedrive, client_id='YOUR_CLIENT_ID
 from rclone_python import rclone
 
 # copy all file in the test_dir on OneDrive to the local data folder.
-rclone.copy('onedrive:test_dir', 'data')
-# Copying from onedrive:test_dir to data |████████████████████████████████████████| 100% in 18.0s (5.56%/s)
+rclone.copy('onedrive:data', 'data', ignore_existing=True, args=['--create-empty-src-dirs'])
+# ☁ Copying:  48%|████▊     | 151.1/315.309 MiB, 13.9 MiB/s, ETA: 11s
 
 ```
 
