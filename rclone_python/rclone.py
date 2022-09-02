@@ -204,7 +204,7 @@ def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=Fa
         command = f'rclone move'
         prog_title = f'Moving'
     else:
-        command = f'rclone copy'
+        command = f'rclone copyto'
         prog_title = f'Copying'
 
     # add global rclone flags
@@ -291,6 +291,10 @@ def _extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, bool], 
         reg_transferred = re.findall(
             r'Transferred:\s+(\d+.\d+ \w+) \/ (\d+.\d+ \w+), (\d{1,3})%, (\d+.\d+ \w+\/\w+), ETA (\d+s)',
             transferred_block)
+
+        if len(reg_transferred) == 0:
+            return False, None  # not valid
+
         sent_bits, total_bits, progress, transfer_speed_str, eta = reg_transferred[0]
         out['total_bits'] = float(re.findall(r'\d+.\d+', total_bits)[0])
         out['sent_bits'] = float(re.findall(r'\d+.\d+', sent_bits)[0])
