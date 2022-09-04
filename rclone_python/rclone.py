@@ -4,7 +4,7 @@ import re
 import subprocess
 from functools import wraps
 from shutil import which
-from typing import Union, List, Dict, Tuple, Callable
+from typing import Union, List, Dict, Tuple, Callable, Any
 
 from tqdm import tqdm
 
@@ -274,26 +274,18 @@ def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE, show
     return process
 
 
-def _extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, bool], None]]:
-    reg_block = re.findall(r'Transferred:(?:.|\n)+ETA \d+s', buffer)
-
+def _extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], None]]:
     # matcher that checks if the progress update block is completely buffered yet (defines start and stop)
+    # it gets the sent bits, total bits, progress, transfer-speed and eta
+    reg_transferred = re.findall(
+        r'Transferred:\s+(\d+.\d+ \w+) \/ (\d+.\d+ \w+), (\d{1,3})%, (\d+.\d+ \w+\/\w+), ETA (\d+s)',
+        buffer)
 
-    if reg_block:  # transferred block is completely buffered
-        out = {}
-        transferred_block = reg_block[0]
-
-        # matcher for the currently transferring files and their individual progress
+    if reg_transferred:  # transferred block is completely buffered
+        # get the progress of the individual files
+        # matcher gets the currently transferring files and their individual progress
         # returns list of tuples: (name, progress)
-        out['prog_transferring'] = re.findall(r'\* +(\S+):[ ]+(\d{1,2})%', transferred_block)
-
-        # matcher that gets sent bits, total bits, progress, transfer-speed and eta
-        reg_transferred = re.findall(
-            r'Transferred:\s+(\d+.\d+ \w+) \/ (\d+.\d+ \w+), (\d{1,3})%, (\d+.\d+ \w+\/\w+), ETA (\d+s)',
-            transferred_block)
-
-        if len(reg_transferred) == 0:
-            return False, None  # not valid
+        out = {'prog_transferring': re.findall(r'\* +(\S+):[ ]+(\d{1,2})%', buffer)}
 
         sent_bits, total_bits, progress, transfer_speed_str, eta = reg_transferred[0]
         out['total_bits'] = float(re.findall(r'\d+.\d+', total_bits)[0])
