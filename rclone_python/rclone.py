@@ -31,6 +31,25 @@ def is_installed() -> bool:
 
 
 @__check_installed
+def about(remote_name: str):
+    """
+    Executes the rclone about command and returns the retrieved json as a dictionary.
+    :param remote_name: The name of the remote to examine.
+    :return: Dictionary with remote properties.
+    """
+    if not remote_name.endswith(':'):
+        # if the remote name missed the colon manually add it.
+        remote_name += ':'
+
+    process = utils.run_cmd(f'rclone about {remote_name} --json')
+
+    if process.returncode == 0:
+        return json.loads(process.stdout)
+    else:
+        raise Exception(f'An error occurred while executing the about command: {process.stderr}')
+
+
+@__check_installed
 def check_remote_existing(remote_name: str) -> bool:
     """
     Returns True, if the specified rclone remote is already configured.
