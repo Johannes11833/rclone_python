@@ -91,6 +91,29 @@ def create_remote(remote_name, remote_type: Union[str, RemoteTypes], client_id=N
     else:
         raise Exception(f'A rclone remote with the name \'{remote_name}\' already exists!')
 
+def check(src_path: str, dst_path: str, show_progress=True, args=None)-> \
+        List[Dict[str, Union[int, str]]]:
+    """
+    Checks the files in the source and destination match. It compares sizes and hashes (MD5 or SHA1) 
+    and logs a report of files that don't match.  It doesn't alter the source or destination.
+    :param src_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param dst_path: The destination path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param show_progress: If true, show a progressbar.
+    :param args: List of additional arguments/ flags.
+    :return: List of filess that miss on the dst_path.
+    """
+    if args is None:
+        args = []
+
+    command = f'rclone check {src_path} {dst_path}'
+
+    process = utils.run_cmd(command, args)
+
+    if process.returncode == 0:
+        return json.loads(process.stdout)
+    else:
+        raise Exception(f'check operation on {src_path} and {dst_path} failed with {process.stderr}')
+
 
 def copy(in_path: str, out_path: str, ignore_existing=False, show_progress=True,
          listener: Callable[[Dict], None] = None, args=None):
