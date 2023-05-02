@@ -199,7 +199,7 @@ def ls(path: str, max_depth: Union[int, None] = None, dirs_only=False, files_onl
     command = f'rclone lsjson {path}'
 
     # add optional parameters
-    if max_depth:
+    if max_depth is not None:
         args.append(f"--max-depth {max_depth}")
     if dirs_only:
         args.append(f"--dirs-only")
