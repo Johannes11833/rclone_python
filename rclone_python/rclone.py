@@ -151,7 +151,7 @@ def purge(path: str, args=None):
     if args is None:
         args = []
 
-    command = f'rclone purge {path}'
+    command = f'rclone purge "{path}"'
     process = utils.run_cmd(command, args)
     if process.returncode == 0:
         logging.info(f'Successfully purged {path}')
@@ -171,7 +171,7 @@ def delete(path: str, args=None):
     if args is None:
         args = []
 
-    command = f'rclone delete {path}'
+    command = f'rclone delete "{path}"'
     process = utils.run_cmd(command, args)
 
     if process.returncode == 0:
@@ -196,7 +196,7 @@ def ls(path: str, max_depth: Union[int, None] = None, dirs_only=False, files_onl
     if args is None:
         args = []
 
-    command = f'rclone lsjson {path}'
+    command = f'rclone lsjson "{path}"'
 
     # add optional parameters
     if max_depth is not None:
@@ -241,9 +241,9 @@ def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=Fa
     command += ' --progress'
 
     # in path
-    command += f' {in_path}'
+    command += f' "{in_path}"'
     # out path
-    command += f' {out_path}'
+    command += f' "{out_path}"'
 
     # optional named arguments/flags
     command += utils.args2string(args)
