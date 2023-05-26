@@ -1,7 +1,7 @@
 import subprocess
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from rich.progress import Progress, TaskID
-
+from pathlib import Path
 
 from rich.progress import (
     Progress,
@@ -12,8 +12,6 @@ from rich.progress import (
     SpinnerColumn,
     DownloadColumn,
 )
-from rich.panel import Panel
-
 
 def args2string(args: List[str]) -> str:
     out = ""
@@ -40,13 +38,22 @@ def run_cmd(
         encoding=encoding,
     )
 
+def shorten_filepath(in_path:str, max_length:int) -> str:
+    if len(in_path) > max_length:
+        if ':' in in_path:
+            in_path = in_path[in_path.index(':') + 1:] if in_path.index(':') + 1 < len(in_path) \
+            else in_path[0:in_path.index(':')]
+        return Path(in_path).name 
+    else:
+        return in_path
+
 
 # ---------------------------------------------------------------------------- #
 #                          Progress related functions                          #
 # ---------------------------------------------------------------------------- #
 
 
-def create_progress_bar(pbar_title: str):
+def create_progress_bar(pbar_title: str) -> Tuple[Progress, TaskID]:
     pbar = Progress(
         TextColumn("[progress.description]{task.description}"),
         SpinnerColumn(),
@@ -55,10 +62,9 @@ def create_progress_bar(pbar_title: str):
         DownloadColumn(binary_units=True),
         TimeRemainingColumn(),
     )
-
-    pbar.console.print(Panel(f"☁ {pbar_title}", expand=False))
-    total_progress = pbar.add_task("[bold]Total Progress", total=None)
     pbar.start()
+
+    total_progress = pbar.add_task(pbar_title, total=None)
 
     return pbar, total_progress
 
@@ -113,13 +119,15 @@ def update_tasks(
         sp_names.add(sp_file_name)
 
         if sp_file_name not in subprocesses:
-            task_id = pbar.add_task(f"  {sp_file_name}", visible=False)
+            task_id = pbar.add_task(" ", visible=False)
             subprocesses[sp_file_name] = task_id
         else:
             task_id = subprocesses[sp_file_name]
 
         pbar.update(
             task_id,
+            # set the description every time to reset the '├'
+            description=f" ├─{sp_file_name}",
             completed=convert2bits(sp_size, sp_unit) * sp_progress / 100.0,
             total=convert2bits(sp_size, sp_unit),
             # hide subprocesses if we only upload a single file
@@ -130,3 +138,9 @@ def update_tasks(
     missing = list(sorted(subprocesses.keys() - sp_names))
     for missing_sp_id in missing:
         pbar.update(subprocesses[missing_sp_id], visible=False)
+
+    # change symbol for the last visible process
+    for task in reversed(pbar.tasks):
+        if task.visible:
+           pbar.update(task.id, description=task.description.replace('├','└'))
+           break

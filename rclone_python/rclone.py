@@ -225,13 +225,7 @@ def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=Fa
         command = f'rclone copyto'
         prog_title = f'Copying'
 
-    # generate progress title from in path. When copying the root directory use the remote name instead
-    if ':' in in_path:
-        in_path_no_prefix = in_path[in_path.index(':') + 1:] if in_path.index(':') + 1 < len(in_path) \
-            else in_path[0:in_path.index(':')]
-    else:
-        in_path_no_prefix = in_path
-    prog_title += f" [magenta]{Path(in_path).name}[/magenta] to [magenta]{Path(out_path).name}"
+    prog_title += f" [bold magenta]{utils.shorten_filepath(in_path, 20)}[/bold magenta] to [bold magenta]{utils.shorten_filepath(out_path, 20)}"
 
     # add global rclone flags
     if ignore_existing:
