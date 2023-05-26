@@ -7,8 +7,6 @@ from pathlib import Path
 from shutil import which
 from typing import Union, List, Dict, Tuple, Callable, Any
 
-from tqdm import tqdm
-
 from rclone_python import utils
 from rclone_python.remote_types import RemoteTypes
 
@@ -227,13 +225,7 @@ def _copy_move(in_path: str, out_path: str, ignore_existing=False, move_files=Fa
         command = f'rclone copyto'
         prog_title = f'Copying'
 
-    # generate progress title from in path. When copying the root directory use the remote name instead
-    if ':' in in_path:
-        in_path_no_prefix = in_path[in_path.index(':') + 1:] if in_path.index(':') + 1 < len(in_path) \
-            else in_path[0:in_path.index(':')]
-    else:
-        in_path_no_prefix = in_path
-    prog_title += f" {Path(in_path_no_prefix).name}"
+    prog_title += f" [bold magenta]{utils.shorten_filepath(in_path, 20)}[/bold magenta] to [bold magenta]{utils.shorten_filepath(out_path, 20)}"
 
     # add global rclone flags
     if ignore_existing:
@@ -265,13 +257,15 @@ def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE, show
 
     buffer = ""
     pbar = None
+    total_progress_id = None
+    subprocesses = {}
 
     if show_progress:
-        pbar = tqdm(bar_format='{l_bar}{bar}| {n:.1f}/{total_fmt} {unit}{postfix}')
-        pbar.set_description(f'☁ {pbar_title}')
+        pbar, total_progress_id = utils.create_progress_bar(pbar_title)
+
 
     for c in iter(lambda: process.stdout.read(1), b''):
-        var = c.decode('utf-8')
+        var = c.decode('utf-8', 'ignore')
         if '\n' not in var:
             buffer += var
         else:
@@ -279,11 +273,7 @@ def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE, show
 
             if valid:
                 if show_progress:
-                    pbar.set_postfix_str(f'{update_dict["transfer_speed"]:.1f} {update_dict["transfer_speed_unit"]}, '
-                                         f'ETA: {update_dict["eta"]}')
-                    pbar.total = update_dict['total_bits']
-                    pbar.unit = update_dict['unit_total']
-                    pbar.update(update_dict['sent_bits'] - pbar.n, )
+                    utils.update_tasks(pbar, total_progress_id, update_dict, subprocesses)
 
                 # call the listener
                 if listener:
@@ -293,14 +283,10 @@ def _rclone_progress(command: str, pbar_title: str, stderr=subprocess.PIPE, show
                 buffer = ""
 
     if show_progress:
-        if not pbar.total:
-            # if no data is downloaded/ upload because the data is already present: manually set progress to 100%
-            pbar.total = 1
-            pbar.update()
-        pbar.close()
+        utils.complete_task(total_progress_id, pbar)
+        pbar.stop()
 
     return process
-
 
 def _extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], None]]:
     # matcher that checks if the progress update block is completely buffered yet (defines start and stop)
@@ -312,10 +298,23 @@ def _extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], N
     if reg_transferred:  # transferred block is completely buffered
         # get the progress of the individual files
         # matcher gets the currently transferring files and their individual progress
-        # returns list of tuples: (name, progress)
-        out = {'prog_transferring': re.findall(r'\* +(\S+):[ ]+(\d{1,2})%', buffer)}
+        # returns list of tuples: (name, progress, file_size, unit)
+        prog_transfering = []
+        prog_regex = re.findall(r'\* +(\S+):[ ]+(\d{1,2})% \/(\d+.\d+)([a-zA-Z]+),', buffer)
+        for item in prog_regex:
+            prog_transfering.append(
+                (
+                    item[0],
+                    int(item[1]),
+                    float(item[2]),
+                    # the suffix B of the unit is missing for subprocesses
+                    item[3] + "B",  
+                )
+            )
 
+        out = {'prog_transferring': prog_transfering}
         sent_bits, total_bits, progress, transfer_speed_str, eta = reg_transferred[0]
+        out['progress'] = float(progress.strip())
         out['total_bits'] = float(re.findall(r'\d+.\d+', total_bits)[0])
         out['sent_bits'] = float(re.findall(r'\d+.\d+', sent_bits)[0])
         out['unit_sent'] = re.findall(r'[a-zA-Z]+', sent_bits)[0]
