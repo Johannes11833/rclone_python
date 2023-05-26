@@ -65,11 +65,15 @@ def create_progress_bar(pbar_title: str):
 
 def convert2bits(value: float, unit: str):
     exp = {
-        "iB": 0,
+        "B": 0,
         "KiB": 1,
         "MiB": 2,
         "GiB": 3,
         "TiB": 4,
+        "PiB": 5,
+        "EiB": 6,
+        "ZiB": 7,
+        "YiB": 8,
     }
 
     return value * 1024 ** exp[unit]
