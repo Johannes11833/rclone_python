@@ -13,6 +13,7 @@ from rich.progress import (
     DownloadColumn,
 )
 
+
 def args2string(args: List[str]) -> str:
     out = ""
 
@@ -38,12 +39,16 @@ def run_cmd(
         encoding=encoding,
     )
 
-def shorten_filepath(in_path:str, max_length:int) -> str:
+
+def shorten_filepath(in_path: str, max_length: int) -> str:
     if len(in_path) > max_length:
-        if ':' in in_path:
-            in_path = in_path[in_path.index(':') + 1:] if in_path.index(':') + 1 < len(in_path) \
-            else in_path[0:in_path.index(':')]
-        return Path(in_path).name 
+        if ":" in in_path:
+            in_path = (
+                in_path[in_path.index(":") + 1 :]
+                if in_path.index(":") + 1 < len(in_path)
+                else in_path[0 : in_path.index(":")]
+            )
+        return Path(in_path).name
     else:
         return in_path
 
@@ -142,5 +147,5 @@ def update_tasks(
     # change symbol for the last visible process
     for task in reversed(pbar.tasks):
         if task.visible:
-           pbar.update(task.id, description=task.description.replace('├','└'))
-           break
+            pbar.update(task.id, description=task.description.replace("├", "└"))
+            break
