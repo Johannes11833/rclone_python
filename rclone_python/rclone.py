@@ -318,10 +318,6 @@ def _rclone_progress(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
 ) -> subprocess.Popen:
-    process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, stderr=stderr, shell=True
-    )
-
     buffer = ""
     pbar = None
     total_progress_id = None
@@ -330,25 +326,27 @@ def _rclone_progress(
     if show_progress:
         pbar, total_progress_id = utils.create_progress_bar(pbar_title)
 
-    for c in iter(lambda: process.stdout.read(1), b""):
-        var = c.decode("utf-8", "ignore")
-        if "\n" not in var:
-            buffer += var
+    process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=stderr, shell=True
+    )
+    for line in iter(process.stdout.readline, b""):
+        var = line.decode()
+
+        valid, update_dict = _extract_rclone_progress(buffer)
+
+        if valid:
+            if show_progress:
+                utils.update_tasks(pbar, total_progress_id, update_dict, subprocesses)
+
+            # call the listener
+            if listener:
+                listener(update_dict)
+
+            # reset the buffer
+            buffer = ""
         else:
-            valid, update_dict = _extract_rclone_progress(buffer)
-
-            if valid:
-                if show_progress:
-                    utils.update_tasks(
-                        pbar, total_progress_id, update_dict, subprocesses
-                    )
-
-                # call the listener
-                if listener:
-                    listener(update_dict)
-
-                # reset the buffer
-                buffer = ""
+            # buffer until we
+            buffer += var
 
     if show_progress:
         utils.complete_task(total_progress_id, pbar)
