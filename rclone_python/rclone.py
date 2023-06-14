@@ -367,12 +367,12 @@ def _extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], N
         # get the progress of the individual files
         # matcher gets the currently transferring files and their individual progress
         # returns list of tuples: (name, progress, file_size, unit)
-        prog_transfering = []
+        prog_transferring = []
         prog_regex = re.findall(
             r"\* +(\S+):[ ]+(\d{1,2})% \/(\d+.\d+)([a-zA-Z]+),", buffer
         )
         for item in prog_regex:
-            prog_transfering.append(
+            prog_transferring.append(
                 (
                     item[0],
                     int(item[1]),
@@ -382,7 +382,7 @@ def _extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], N
                 )
             )
 
-        out = {"prog_transferring": prog_transfering}
+        out = {"prog_transferring": prog_transferring}
         sent_bits, total_bits, progress, transfer_speed_str, eta = reg_transferred[0]
         out["progress"] = float(progress.strip())
         out["total_bits"] = float(re.findall(r"\d+.\d+", total_bits)[0])
