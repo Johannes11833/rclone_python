@@ -375,6 +375,9 @@ def _rclone_progress(
 
     if show_progress:
         utils.complete_task(total_progress_id, pbar)
+        for _, task_id in subprocesses.items():
+            # hide all subprocesses
+            pbar.update(task_id=task_id, visible=False)
         pbar.stop()
 
     return process
