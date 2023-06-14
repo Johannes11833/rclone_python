@@ -303,6 +303,21 @@ def _rclone_transfer_operation(
     listener: Callable[[Dict], None] = None,
     args=None,
 ):
+    """Executes the rclone transfer operation (e.g. copyto, move, ...) and displays the progress of every individual file.
+
+    Args:
+        in_path (str): The source path to use. Specify the remote with 'remote_name:path_on_remote'
+        out_path (str): The destination path to use. Specify the remote with 'remote_name:path_on_remote'
+        command (str): The rclone command to execute (e.g. rclone copyto)
+        command_descr (str): The description to this command that should be displayed.
+        ignore_existing (bool, optional): If True, all existing files are ignored and not overwritten.
+        show_progress (bool, optional): If true, show a progressbar.
+        listener (Callable[[Dict], None], optional): An event-listener that is called with every update of rclone.
+        args: List of additional arguments/ flags.
+
+    Raises:
+        Exception: _description_
+    """
     if args is None:
         args = []
 
