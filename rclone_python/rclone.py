@@ -125,11 +125,12 @@ def copy(
     if args is None:
         args = []
 
-    _copy_move(
+    _rclone_transfer_operation(
         in_path,
         out_path,
         ignore_existing=ignore_existing,
-        move_files=False,
+        command="rclone copyto",
+        command_descr="Copying",
         show_progress=show_progress,
         listener=listener,
         args=args,
@@ -156,11 +157,41 @@ def move(
     if args is None:
         args = []
 
-    _copy_move(
+    _rclone_transfer_operation(
         in_path,
         out_path,
         ignore_existing=ignore_existing,
-        move_files=True,
+        command="rclone move",
+        command_descr="Moving",
+        show_progress=show_progress,
+        listener=listener,
+        args=args,
+    )
+
+
+def sync(
+    src_path: str,
+    dest_path: str,
+    show_progress=True,
+    listener: Callable[[Dict], None] = None,
+    args=None,
+):
+    """
+    Sync the source to the destination, changing the destination only. Doesn't transfer files that are identical on source and destination, testing by size and modification time or MD5SUM.
+    :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param out_path: The destination path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param show_progress: If true, show a progressbar.
+    :param listener: An event-listener that is called with every update of rclone.
+    :param args: List of additional arguments/ flags.
+    """
+    if args is None:
+        args = []
+
+    _rclone_transfer_operation(
+        src_path,
+        dest_path,
+        command="rclone sync",
+        command_descr="Syncing",
         show_progress=show_progress,
         listener=listener,
         args=args,
@@ -262,11 +293,12 @@ def ls(
 
 
 @__check_installed
-def _copy_move(
+def _rclone_transfer_operation(
     in_path: str,
     out_path: str,
+    command: str,
+    command_descr: str,
     ignore_existing=False,
-    move_files=False,
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
@@ -274,14 +306,7 @@ def _copy_move(
     if args is None:
         args = []
 
-    if move_files:
-        command = f"rclone move"
-        prog_title = f"Moving"
-    else:
-        command = f"rclone copyto"
-        prog_title = f"Copying"
-
-    prog_title += f" [bold magenta]{utils.shorten_filepath(in_path, 20)}[/bold magenta] to [bold magenta]{utils.shorten_filepath(out_path, 20)}"
+    prog_title = f"{command_descr} [bold magenta]{utils.shorten_filepath(in_path, 20)}[/bold magenta] to [bold magenta]{utils.shorten_filepath(out_path, 20)}"
 
     # add global rclone flags
     if ignore_existing:
