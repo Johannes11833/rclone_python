@@ -71,29 +71,42 @@ def check_remote_existing(remote_name: str) -> bool:
 
 @__check_installed
 def create_remote(
-    remote_name,
+    remote_name: str,
     remote_type: Union[str, RemoteTypes],
-    client_id=None,
-    client_secret=None,
+    client_id: Union[str, None] = None,
+    client_secret: Union[str, None] = None,
+    **kwargs,
 ):
+    """Creates a new remote with name, type and options.
+
+    Args:
+        remote_name (str): Name of the new remote.
+        remote_type (Union[str, RemoteTypes]): The type of the remote (e.g. "onedrive", RemoteTypes.dropbox, ...)
+        client_id (str, optional): OAuth Client Id.
+        client_secret (str, optional): OAuth Client Secret.
+        **kwargs: Additional key value pairs that can be used with the "rclone config create" command.
+    """
     if isinstance(remote_type, RemoteTypes):
         remote_type = remote_type.value
 
     if not check_remote_existing(remote_name):
         # set up the selected cloud
-        command = f'rclone config create "{remote_name}" {remote_type}'
+        command = f'rclone config create "{remote_name}" "{remote_type}"'
 
         if client_id and client_secret:
             logging.info("Using the provided client id and client secret.")
 
-            command += (
-                f' --{remote_type}-client-id "{client_id}"'
-                f' --{remote_type}-client-secret "{client_secret}"'
-            )
+            kwargs["client_id"] = client_id
+            kwargs["client_secret"] = client_secret
         else:
             logging.warning(
                 "The drive client id and the client secret have not been set. Using defaults."
             )
+
+        # add the options as key-value pairs
+        for key, value in kwargs.items():
+            command += f' {key}="{value}"'
+
         # run the setup command
         process = utils.run_cmd(command)
 
@@ -314,9 +327,6 @@ def _rclone_transfer_operation(
         show_progress (bool, optional): If true, show a progressbar.
         listener (Callable[[Dict], None], optional): An event-listener that is called with every update of rclone.
         args: List of additional arguments/ flags.
-
-    Raises:
-        Exception: _description_
     """
     if args is None:
         args = []
