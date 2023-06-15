@@ -71,11 +71,21 @@ def check_remote_existing(remote_name: str) -> bool:
 
 @__check_installed
 def create_remote(
-    remote_name,
+    remote_name: str,
     remote_type: Union[str, RemoteTypes],
-    client_id=None,
-    client_secret=None,
+    client_id: Union[str, None] = None,
+    client_secret: Union[str, None] = None,
+    options: Union[Dict[str, str], None] = None,
 ):
+    """Creates a new remote with name, type and options.
+
+    Args:
+        remote_name (str): Name of the new remote.
+        remote_type (Union[str, RemoteTypes]): The type of the remote (e.g. "onedrive", RemoteTypes.dropbox, ...)
+        client_id (str, optional): OAuth Client Id.
+        client_secret (str, optional): OAuth Client Secret.
+        options (Dict[str, str], optional): Additional key-value pairs that can be used with the "rclone config create" command.
+    """
     if isinstance(remote_type, RemoteTypes):
         remote_type = remote_type.value
 
@@ -83,6 +93,12 @@ def create_remote(
         # set up the selected cloud
         command = f'rclone config create "{remote_name}" {remote_type}'
 
+        # add the options as key-value pairs
+        if options:
+            for key, value in options.items():
+                command += f' {key}="{value}"'
+
+        # add the flags
         if client_id and client_secret:
             logging.info("Using the provided client id and client secret.")
 
@@ -314,9 +330,6 @@ def _rclone_transfer_operation(
         show_progress (bool, optional): If true, show a progressbar.
         listener (Callable[[Dict], None], optional): An event-listener that is called with every update of rclone.
         args: List of additional arguments/ flags.
-
-    Raises:
-        Exception: _description_
     """
     if args is None:
         args = []
