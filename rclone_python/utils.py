@@ -1,5 +1,6 @@
+import re
 import subprocess
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple, Union
 from rich.progress import Progress, TaskID, Task
 from pathlib import Path
 
@@ -57,27 +58,6 @@ def shorten_filepath(in_path: str, max_length: int) -> str:
         return in_path
 
 
-# ---------------------------------------------------------------------------- #
-#                          Progressbar related functions                       #
-# ---------------------------------------------------------------------------- #
-
-
-def create_progress_bar(pbar_title: str) -> Tuple[Progress, TaskID]:
-    pbar = Progress(
-        TextColumn("[progress.description]{task.description}"),
-        SpinnerColumn(),
-        BarColumn(),
-        TaskProgressColumn(),
-        DownloadColumn(binary_units=True),
-        TimeRemainingColumn(),
-    )
-    pbar.start()
-
-    total_progress = pbar.add_task(pbar_title, total=None)
-
-    return pbar, total_progress
-
-
 def convert2bits(value: float, unit: str) -> float:
     """Returns the corresponding bit value to a value with a certain binary prefix (based on powers of 2) like KiB or MiB.
 
@@ -101,6 +81,120 @@ def convert2bits(value: float, unit: str) -> float:
     }
 
     return value * 1024 ** exp[unit]
+
+
+# ---------------------------------------------------------------------------- #
+#                          Progressbar related functions                       #
+# ---------------------------------------------------------------------------- #
+
+
+def rclone_progress(
+    command: str,
+    pbar_title: str,
+    stderr=subprocess.PIPE,
+    show_progress=True,
+    listener: Callable[[Dict], None] = None,
+) -> subprocess.Popen:
+    buffer = ""
+    pbar = None
+    total_progress_id = None
+    subprocesses = {}
+
+    if show_progress:
+        pbar, total_progress_id = create_progress_bar(pbar_title)
+
+    process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=stderr, shell=True
+    )
+    for line in iter(process.stdout.readline, b""):
+        var = line.decode()
+
+        valid, update_dict = extract_rclone_progress(buffer)
+
+        if valid:
+            if show_progress:
+                update_tasks(pbar, total_progress_id, update_dict, subprocesses)
+
+            # call the listener
+            if listener:
+                listener(update_dict)
+
+            # reset the buffer
+            buffer = ""
+        else:
+            # buffer until we
+            buffer += var
+
+    if show_progress:
+        complete_task(total_progress_id, pbar)
+        for _, task_id in subprocesses.items():
+            # hide all subprocesses
+            pbar.update(task_id=task_id, visible=False)
+        pbar.stop()
+
+    return process
+
+
+def extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], None]]:
+    # matcher that checks if the progress update block is completely buffered yet (defines start and stop)
+    # it gets the sent bits, total bits, progress, transfer-speed and eta
+    reg_transferred = re.findall(
+        r"Transferred:\s+(\d+.\d+ \w+) \/ (\d+.\d+ \w+), (\d{1,3})%, (\d+.\d+ \w+\/\w+), ETA (\S+)",
+        buffer,
+    )
+
+    if reg_transferred:  # transferred block is completely buffered
+        # get the progress of the individual files
+        # matcher gets the currently transferring files and their individual progress
+        # returns list of tuples: (name, progress, file_size, unit)
+        prog_transferring = []
+        prog_regex = re.findall(
+            r"\* +(\S+):[ ]+(\d{1,2})% \/(\d+.\d+)([a-zA-Z]+),", buffer
+        )
+        for item in prog_regex:
+            prog_transferring.append(
+                (
+                    item[0],
+                    int(item[1]),
+                    float(item[2]),
+                    # the suffix B of the unit is missing for subprocesses
+                    item[3] + "B",
+                )
+            )
+
+        out = {"prog_transferring": prog_transferring}
+        sent_bits, total_bits, progress, transfer_speed_str, eta = reg_transferred[0]
+        out["progress"] = float(progress.strip())
+        out["total_bits"] = float(re.findall(r"\d+.\d+", total_bits)[0])
+        out["sent_bits"] = float(re.findall(r"\d+.\d+", sent_bits)[0])
+        out["unit_sent"] = re.findall(r"[a-zA-Z]+", sent_bits)[0]
+        out["unit_total"] = re.findall(r"[a-zA-Z]+", total_bits)[0]
+        out["transfer_speed"] = float(re.findall(r"\d+.\d+", transfer_speed_str)[0])
+        out["transfer_speed_unit"] = re.findall(
+            r"[a-zA-Z]+/[a-zA-Z]+", transfer_speed_str
+        )[0]
+        out["eta"] = eta
+
+        return True, out
+
+    else:
+        return False, None
+
+
+def create_progress_bar(pbar_title: str) -> Tuple[Progress, TaskID]:
+    pbar = Progress(
+        TextColumn("[progress.description]{task.description}"),
+        SpinnerColumn(),
+        BarColumn(),
+        TaskProgressColumn(),
+        DownloadColumn(binary_units=True),
+        TimeRemainingColumn(),
+    )
+    pbar.start()
+
+    total_progress = pbar.add_task(pbar_title, total=None)
+
+    return pbar, total_progress
 
 
 def get_task(id: TaskID, progress: Progress) -> Task:
