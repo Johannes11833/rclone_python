@@ -305,6 +305,30 @@ def ls(
         raise Exception(f"ls operation on {path} failed with {process.stderr}")
 
 
+def tree(
+    path: str,
+    args: List[str] = None,
+) -> str:
+    """Returns the contents of the remote path in a tree like fashion.
+
+    Args:
+        path (str): The path from which the tree should be generated
+        args (List[str], optional): Optional additional list of flags (e.g. ['--all', '--modtime']).
+
+    Returns:
+        str: String containing the file tree.
+    """
+    if args is None:
+        args = []
+
+    process = utils.run_cmd(f'rclone tree "{path}"', args)
+
+    if process.returncode != 0:
+        raise Exception(process.stderr)
+    else:
+        return process.stdout
+
+
 @__check_installed
 def _rclone_transfer_operation(
     in_path: str,
