@@ -262,6 +262,39 @@ def delete(path: str, args=None):
             f'Deleting path "{path}" failed with error message:\n{process.stderr}'
         )
 
+@__check_installed
+def link(
+    path: str,
+    expire: Union[str, None] = None,
+    unlink=False,
+    args=None,
+) -> str:
+    """
+    Generate public link to file/directory.
+    :param path: The path to the file/directory that should be create, retrieve or remove a public link.
+    :param expire: The amount of time that the link will be valid
+    :param unlink: If true, remove existing public links to the file or directory.
+    :param args: List of additional arguments/ flags.
+    :return: The link to the given file or directory.
+    """
+    if args is None:
+        args = []
+
+    command = f'rclone link "{path}"'
+
+    # add optional parameters
+    if expire is not None:
+        args.append(f"--expire {expire}")
+    if unlink:
+        args.append(f"--unlink")
+
+    process = utils.run_cmd(command, args)
+
+    if process.returncode != 0:
+        raise Exception(process.stderr)
+    else:
+        return process.stdout
+
 
 @__check_installed
 def ls(
