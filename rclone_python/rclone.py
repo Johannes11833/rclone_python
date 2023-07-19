@@ -270,10 +270,10 @@ def link(
     args=None,
 ) -> str:
     """
-    Generate public link to file/directory.
-    :param path: The path to the file/directory that should be create, retrieve or remove a public link.
-    :param expire: The amount of time that the link will be valid
-    :param unlink: If true, remove existing public links to the file or directory.
+    Generates a public link to a file/directory.
+    :param path: The path to the file/directory that a public link should be created, retrieved or removed for.
+    :param expire: The amount of time that the link will be valid (not supported by all backends).
+    :param unlink: If true, remove existing public links to the file or directory (not supported by all backends).
     :param args: List of additional arguments/ flags.
     :return: The link to the given file or directory.
     """
