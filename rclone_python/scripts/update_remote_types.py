@@ -20,8 +20,6 @@ def extract_remote_names(output_path: str = None) -> str:
     rclone_output = sp.check_output("rclone config providers", shell=True)
     data = json.loads(rclone_output)
 
-    # get current version
-
     output = ""
 
     for provider in data:
