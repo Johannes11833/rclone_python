@@ -6,13 +6,6 @@ class RemoteTypes(Enum):
     A more detailed overview can be found here: https://rclone.org/overview/
     """
 
-    amazon_cloud_drive = "amazon cloud drive"
-    azureblob = "azureblob"
-    b2 = "b2"
-    box = "box"
-    crypt = "crypt"
-    cache = "cache"
-    chunker = "chunker"
     combine = "combine"
     compress = "compress"
     drive = "drive"
