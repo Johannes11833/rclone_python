@@ -1,8 +1,9 @@
 import json
+import re
 import logging
 from functools import wraps
 from shutil import which
-from typing import Union, List, Dict, Callable, Any
+from typing import Union, List, Dict, Callable
 
 from rclone_python import utils
 from rclone_python.remote_types import RemoteTypes
@@ -262,6 +263,7 @@ def delete(path: str, args=None):
             f'Deleting path "{path}" failed with error message:\n{process.stderr}'
         )
 
+
 @__check_installed
 def link(
     path: str,
@@ -357,6 +359,38 @@ def tree(
         raise Exception(process.stderr)
     else:
         return process.stdout
+
+
+@__check_installed
+def version(
+    check=False,
+    args: List[str] = None,
+) -> Union[str, List[str]]:
+    """Get the rclone version number.
+
+    Args:
+        check (bool, optional): Whether to do an online check to compare your version with the latest release and the latest beta. Defaults to False.
+        args (List[str], optional): Optional additional list of flags. Defaults to None.
+
+    Returns:
+        Union[str, Set[str, str, str]]: When check is False, returns string of current version. When check is True returns installed version, lastest version and latest beta version.
+    """
+    if args is None:
+        args = []
+
+    if check:
+        args.append("--check")
+
+    stdout = utils.run_cmd("rclone version", args).stdout
+
+    if not check:
+        return stdout.split("\n")[0].replace("rclone ", "")
+    else:
+        yours = re.findall(r"yours:\s+([\d.]+)", stdout)[0]
+        latest = re.findall(r"latest:\s+([\d.]+)", stdout)[0]
+        # beta version might include dashes and word characters e.g. '1.64.0-beta.7161.9169b2b5a'
+        beta = re.findall(r"beta:\s+([.\w-]+)", stdout)[0]
+        return yours, latest, beta
 
 
 @__check_installed
