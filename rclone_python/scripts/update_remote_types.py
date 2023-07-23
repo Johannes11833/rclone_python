@@ -7,7 +7,7 @@ from rclone_python import rclone
 
 
 def extract_remote_names(output_path: str = None) -> str:
-    """Extracts all the remote types supported by rclone.
+    """Updates the remote_types.py file to the newest supported backends.
 
     Args:
         output_path (str, optional): If provided, save the remote names as a .txt file.
