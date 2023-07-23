@@ -1,4 +1,4 @@
-name: Update remote types
+name: update rclone remote types
 
 # on:
 #   schedule:
@@ -35,10 +35,10 @@ jobs:
 
       - name: commit files
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git add -A
-          git diff-index --quiet HEAD || (git commit -a -m "updated logs" --allow-empty)
+          git diff-index --quiet HEAD || (git commit -a -m "Updated rclone remote types" --allow-empty)
 
       - name: push changes
         uses: ad-m/github-push-action@v0.6.0
