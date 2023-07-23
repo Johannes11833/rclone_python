@@ -1,13 +1,8 @@
 name: update rclone remote types
 
-# on:
-#   schedule:
-#     - cron: '0 10 * * 0' # At 00:00 on Monday
-
 on:
-    push:
-      branches:
-        - "feature/update_remotes"
+  schedule:
+    - cron: '0 10 * * 0' # At 00:00 on Monday
 
 jobs:
   build:
