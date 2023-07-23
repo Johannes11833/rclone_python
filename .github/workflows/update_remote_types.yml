@@ -1,8 +1,13 @@
-name: run main.py
+name: Update remote types
+
+# on:
+#   schedule:
+#     - cron: '0 10 * * 0' # At 00:00 on Monday
 
 on:
-  schedule:
-    - cron: '32 13 * * *' # At 00:00 on Monday
+    push:
+      branches:
+        - "feature/update_remotes"
 
 jobs:
   build:
