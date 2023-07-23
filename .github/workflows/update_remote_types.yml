@@ -2,7 +2,7 @@ name: run main.py
 
 on:
   schedule:
-    - cron: '0 0 * * 1' # At 00:00 on Monday
+    - cron: '32 13 * * *' # At 00:00 on Monday
 
 jobs:
   build:
@@ -20,13 +20,12 @@ jobs:
       - name: install the rclone software
         run: sudo -v ; curl https://rclone.org/install.sh | sudo bash
 
-
       - name: install rclone python package
         run: |
           python -m pip install --upgrade pip
           pip install .
 
-      - name: execute py script # run teh update script
+      - name: execute py script # run the update script
         run: python rclone_python/scripts/update_remote_types.py
 
       - name: commit files
