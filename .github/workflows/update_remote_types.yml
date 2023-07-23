@@ -1,0 +1,42 @@
+name: update rclone remote types
+
+on:
+  schedule:
+    - cron: '0 0 * * 1' # At 00:00 on Monday
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: checkout repo content
+        uses: actions/checkout@v2 # checkout the repository content
+
+      - name: setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10' # install the python version needed
+
+      - name: install the rclone software
+        run: sudo -v ; curl https://rclone.org/install.sh | sudo bash
+
+      - name: install rclone python package
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+
+      - name: execute py script # run the update script
+        run: python rclone_python/scripts/update_remote_types.py
+
+      - name: commit files
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git diff-index --quiet HEAD || (git commit -a -m "Updated rclone remote types" --allow-empty)
+
+      - name: push changes
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GH_ACCESS_TOKEN }}
+          branch: feature/update_remotes 
