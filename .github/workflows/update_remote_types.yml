@@ -1,8 +1,9 @@
 name: update rclone remote types
 
-on:
-  schedule:
-    - cron: '0 0 * * 1' # At 00:00 on Monday
+on: push
+# on:
+  # schedule:
+    # - cron: '0 0 * * 1' # At 00:00 on Monday
 
 jobs:
   build:
@@ -27,7 +28,9 @@ jobs:
           pip install .
 
       - name: execute py script # run the update script
-        run: python rclone_python/scripts/update_remote_types.py
+        run: |
+          python rclone_python/scripts/update_hash_types.py
+          python rclone_python/scripts/update_remote_types.py
 
       - name: run black formatter
         run: |
@@ -39,10 +42,11 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add -A
-          git diff-index --quiet HEAD || (git commit -a -m "Updated rclone remote types" --allow-empty)
+          git diff-index --quiet HEAD || (git commit -a -m "Updated rclone remote & hash types" --allow-empty)
 
       - name: push changes
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.GH_ACCESS_TOKEN }}
-          branch: master 
+          # branch: master 
+          branch: feature/hashes 
