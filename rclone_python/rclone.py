@@ -3,7 +3,7 @@ import re
 import logging
 from functools import wraps
 from shutil import which
-from typing import Union, List, Dict, Callable
+from typing import Optional, Union, List, Dict, Callable
 
 from rclone_python import utils
 from rclone_python.remote_types import RemoteTypes
@@ -345,7 +345,7 @@ def tree(
 
     Args:
         path (str): The path from which the tree should be generated
-        args (List[str], optional): Optional additional list of flags (e.g. ['--all', '--modtime']).
+        args (List[str], optional): Optional additional list of flags.
 
     Returns:
         str: String containing the file tree.
@@ -359,6 +359,93 @@ def tree(
         raise Exception(process.stderr)
     else:
         return process.stdout
+
+
+@__check_installed
+def hash(
+    hash: str,
+    path: str,
+    download=False,
+    checkfile: Optional[str] = None,
+    output_file: Optional[str] = None,
+    args: List[str] = None,
+) -> Union[None, str, bool, Dict[str, str], Dict[str, bool]]:
+    """Produces a hashsum file for all the objects in the path.
+
+    Args:
+        hash (str): The hash algorithm to use, e.g. sha1. Depends on the backend used.
+        path (str): The path to the file/ folder to generate hashes for.
+        download (bool, optional): Download the file and hash it locally. Useful when the backend does not support the selected hash algorithm.
+        checkfile (Optional[str], optional):  Validate hashes against a given SUM file instead of printing them.
+        output_file (Optional[str], optional): Output hashsums to a file rather than the terminal (same format as the checkfile).
+        args (List[str], optional): Optional additional list of flags.
+
+    Raises:
+        Exception: Raised when the rclone command does not succeed.
+
+    Returns:
+        Union[None, str, bool, Dict[str, str], Dict[str, bool]]: 3 different modes apply based on the inputs:
+            1)  Nothing is returned when output file is set.
+            2)  When checkfile is set, a dictionary is returned with file names as keys.
+                The values are either True or False, depending on wether the file is valid ot not.
+                In the special case of only a single file, True or False is directly returned.
+            3)  If neither checkfile nor output_file is set, a dictionary is returned with file names as keys.
+                The values are the individual hash sums.
+                In the special case of only a single file, the hashsum is directly returned.
+    """
+
+    if args is None:
+        args = []
+
+    if download:
+        args.append("--download")
+
+    if checkfile is not None:
+        args.append(f'--checkfile "{checkfile}"')
+
+    if output_file is not None:
+        args.append(f'--output-file "{output_file}"')
+
+    process: str = utils.run_cmd(f'rclone hashsum "{hash}" "{path}"', args)
+
+    lines = process.stdout.splitlines()
+
+    exception = False
+
+    if process.returncode != 0:
+        if checkfile is None:
+            exception = True
+        else:
+            # validate that the checkfile command succeeded, by checking if the output has the expected form
+            for l in lines:
+                if not (l.startswith("= ") or l.startswith("* ")):
+                    exception = True
+                    break
+
+    if exception:
+        raise Exception(
+            f"hashsum operation on {path} with hash='{hash}' failed with:\n{process.stderr}"
+        )
+
+    if output_file is None:
+        # each line contains the hashsum first, followed by the name of the file
+        hashsums = {}
+
+        for l in lines:
+            if len(l) > 0:
+                value, key = l.split()
+
+                if checkfile is None:
+                    hashsums[key] = value
+                else:
+                    # in checkfile mode, value is '=' for valid and '*' for invalid files
+                    hashsums[key] = value == "="
+
+        # for only a single file return the value instead of the dict
+        if len(hashsums) == 1:
+            return next(iter(hashsums.values()))
+
+        return hashsums
 
 
 @__check_installed
@@ -381,7 +468,12 @@ def version(
     if check:
         args.append("--check")
 
-    stdout = utils.run_cmd("rclone version", args).stdout
+    process = utils.run_cmd("rclone version", args)
+
+    if process.returncode != 0:
+        raise Exception(process.stderr)
+
+    stdout = process.stdout
 
     if not check:
         return stdout.split("\n")[0].replace("rclone ", "")

@@ -31,7 +31,7 @@ def extract_remote_names(output_path: str = None) -> str:
 
         var_name = name.replace(" ", "_")
 
-        output += f'    {var_name} = "{name}"\n'
+        output += f'{var_name} = "{name}"\n'
 
     if output_path:
         with open(output_path, "w") as o:
