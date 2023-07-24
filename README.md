@@ -16,6 +16,8 @@ rclone needs to be installed on the system for the wrapper to work.
 - List available remotes.
 - Create new remotes
 - Check available remotes
+- Create and manage public links.
+- Check the currently installed rclone versions and if updates are available.
 
 ## Installation 💾
 
