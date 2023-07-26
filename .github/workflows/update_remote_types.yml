@@ -20,23 +20,31 @@ jobs:
       - name: install the rclone software
         run: sudo -v ; curl https://rclone.org/install.sh | sudo bash
 
-      - name: install rclone python package
+      - name: install black formatter
         run: |
           python -m pip install --upgrade pip
-          pip install .
+          pip install black
 
       - name: execute py script # run the update script
-        run: python rclone_python/scripts/update_remote_types.py
+        run: |
+          python rclone_python/scripts/update_hash_types.py
+          python rclone_python/scripts/update_remote_types.py
+
+      - name: run black formatter
+        run: |
+          black rclone_python/remote_types.py
+          black rclone_python/hash_types.py
 
       - name: commit files
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add -A
-          git diff-index --quiet HEAD || (git commit -a -m "Updated rclone remote types" --allow-empty)
+          git diff-index --quiet HEAD || (git commit -a -m "Updated rclone remote & hash types" --allow-empty)
 
       - name: push changes
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.GH_ACCESS_TOKEN }}
-          branch: master 
+          branch: master
+          
