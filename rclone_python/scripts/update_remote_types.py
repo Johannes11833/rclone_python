@@ -3,7 +3,7 @@
 
 import json
 import subprocess as sp
-from rclone_python import rclone
+from get_version import get_version
 
 
 def extract_remote_names(output_path: str = None) -> str:
@@ -34,7 +34,7 @@ def extract_remote_names(output_path: str = None) -> str:
         o.write("from enum import Enum")
         o.write("\nclass RemoteTypes(Enum):")
         o.write(
-            f'\n\t"""These are all the cloud systems support by rclone (generated with {rclone.version()}).'
+            f'\n\t"""These are all the cloud systems support by rclone (generated with {get_version()}).'
         )
         o.write(
             "\n\tA more detailed overview can be found here: https://rclone.org/overview/"

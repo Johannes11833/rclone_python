@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
 
-import json
 import subprocess as sp
-from rclone_python import rclone
+
+from get_version import get_version
 
 
 def update_hashes(output_path: str):
@@ -26,7 +26,7 @@ def update_hashes(output_path: str):
         o.write("from enum import Enum")
         o.write("\nclass HashTypes(Enum):")
         o.write(
-            f'\n\t"""These are all the hash algorithms support by rclone (generated with {rclone.version()}).'
+            f'\n\t"""These are all the hash algorithms support by rclone (generated with {get_version()}).'
         )
         o.write(
             "\n\tA more detailed overview can be found here: https://rclone.org/commands/rclone_hashsum/"
