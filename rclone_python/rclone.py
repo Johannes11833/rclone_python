@@ -43,20 +43,6 @@ def about(remote_name: str):
 
     process = utils.run_cmd(f"rclone about {remote_name} --json")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     if process.returncode == 0:
         return json.loads(process.stdout)
     else:
