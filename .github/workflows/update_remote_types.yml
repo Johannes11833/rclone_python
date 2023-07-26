@@ -1,9 +1,8 @@
 name: update rclone remote types
 
-on: push
-# on:
-#   schedule:
-#     - cron: '0 0 * * 1' # At 00:00 on Monday
+on:
+  schedule:
+    - cron: '0 0 * * 1' # At 00:00 on Monday
 
 jobs:
   build:
@@ -47,4 +46,5 @@ jobs:
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.GH_ACCESS_TOKEN }}
-          branch: feature/hashes
+          branch: master
+          

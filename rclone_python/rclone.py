@@ -335,7 +335,7 @@ def ls(
     if process.returncode == 0:
         return json.loads(process.stdout)
     else:
-        raise Exception(f"ls operation on {path} failed with {process.stderr}")
+        raise Exception(f"ls operation on {path} failed with:\n{process.stderr}")
 
 
 def tree(
