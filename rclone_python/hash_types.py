@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class RemoteTypes(Enum):
+class HashTypes(Enum):
     """These are all the hash algorithms support by rclone (generated with v1.63.1).
     A more detailed overview can be found here: https://rclone.org/commands/rclone_hashsum/
     """
