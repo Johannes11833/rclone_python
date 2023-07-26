@@ -14,6 +14,7 @@ rclone needs to be installed on the system for the wrapper to work.
 - Delete and prune files/directories
 - List files in a directory including properties of the files.
 - List available remotes.
+- Generate hashes from files or validate them with their hashsum.
 - Create new remotes
 - Check available remotes
 - Create and manage public links.
