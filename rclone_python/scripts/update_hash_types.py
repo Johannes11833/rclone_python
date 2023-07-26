@@ -24,7 +24,7 @@ def update_hashes(output_path: str):
 
     with open(output_path, "w") as o:
         o.write("from enum import Enum")
-        o.write("\nclass RemoteTypes(Enum):")
+        o.write("\nclass HashTypes(Enum):")
         o.write(
             f'\n\t"""These are all the hash algorithms support by rclone (generated with {rclone.version()}).'
         )

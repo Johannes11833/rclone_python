@@ -98,3 +98,11 @@ from rclone_python import rclone
 rclone.purge('onedrive:test_dir')
 ```
 
+### Get Hash
+```python
+from rclone_python import rclone
+from rclone_python.hash_types import HashTypes
+
+print(rclone.hash(HashTypes.sha1, "box:data")
+# {'video1.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b', 'video3.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b', 'video2.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b'}
+```

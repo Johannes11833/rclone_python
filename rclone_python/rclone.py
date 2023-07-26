@@ -6,6 +6,7 @@ from shutil import which
 from typing import Optional, Union, List, Dict, Callable
 
 from rclone_python import utils
+from rclone_python.hash_types import HashTypes
 from rclone_python.remote_types import RemoteTypes
 
 
@@ -363,7 +364,7 @@ def tree(
 
 @__check_installed
 def hash(
-    hash: str,
+    hash: Union[str, HashTypes],
     path: str,
     download=False,
     checkfile: Optional[str] = None,
@@ -373,7 +374,7 @@ def hash(
     """Produces a hashsum file for all the objects in the path.
 
     Args:
-        hash (str): The hash algorithm to use, e.g. sha1. Depends on the backend used.
+        hash (Union[str, HashTypes]): The hash algorithm to use, e.g. sha1. Depends on the backend used.
         path (str): The path to the file/ folder to generate hashes for.
         download (bool, optional): Download the file and hash it locally. Useful when the backend does not support the selected hash algorithm.
         checkfile (Optional[str], optional):  Validate hashes against a given SUM file instead of printing them.
@@ -393,6 +394,9 @@ def hash(
                 The values are the individual hash sums.
                 In the special case of only a single file, the hashsum is directly returned.
     """
+
+    if isinstance(hash, HashTypes):
+        hash = hash.value
 
     if args is None:
         args = []
