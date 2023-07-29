@@ -43,9 +43,11 @@ The following example checks if rclone is installed.
 from rclone_python import rclone
 
 print(rclone.is_installed())
-# True
 ```
 
+```console
+True
+```
 ### Create new remote
 
 Create a new rclone remote connection with rclone's default client-id and client-secret.
@@ -73,8 +75,14 @@ from rclone_python import rclone
 
 # copy all file in the test_dir on OneDrive to the local data folder.
 rclone.copy('onedrive:data', 'data', ignore_existing=True, args=['--create-empty-src-dirs'])
-# ☁ Copying:  48%|████▊     | 151.1/315.309 MiB, 13.9 MiB/s, ETA: 11s
+```
 
+
+```console
+Copying box:data_new to data2 ⠸ ━━━━━━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━  47% 110.0/236.5 MiB 0:00:04
+ ├─video1.webm                ⠸ ━━━━━━━━━━━━╺━━━━━━━━━━━━━━━━━━━━━━━━━━━  31% 24.4/78.8 MiB   0:00:06
+ ├─video2.webm                ⠸ ━━━━━━━━━━━━━━━━━━╺━━━━━━━━━━━━━━━━━━━━━  45% 35.5/78.8 MiB   0:00:03
+ └─video3.webm                ⠸ ━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━━━━━━  35% 27.6/78.8 MiB   0:00:05
 ```
 
 ### Delete
@@ -105,5 +113,7 @@ from rclone_python import rclone
 from rclone_python.hash_types import HashTypes
 
 print(rclone.hash(HashTypes.sha1, "box:data")
-# {'video1.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b', 'video3.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b', 'video2.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b'}
+```
+```console
+{'video1.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b', 'video3.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b', 'video2.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b'}
 ```
