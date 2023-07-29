@@ -79,7 +79,7 @@ rclone.copy('onedrive:data', 'data', ignore_existing=True, args=['--create-empty
 
 
 ```console
-Copying box:data_new to data2 ⠸ ━━━━━━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━  47% 110.0/236.5 MiB 0:00:04
+Copying onedrive:data to data ⠸ ━━━━━━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━  47% 110.0/236.5 MiB 0:00:04
  ├─video1.webm                ⠸ ━━━━━━━━━━━━╺━━━━━━━━━━━━━━━━━━━━━━━━━━━  31% 24.4/78.8 MiB   0:00:06
  ├─video2.webm                ⠸ ━━━━━━━━━━━━━━━━━━╺━━━━━━━━━━━━━━━━━━━━━  45% 35.5/78.8 MiB   0:00:03
  └─video3.webm                ⠸ ━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━━━━━━  35% 27.6/78.8 MiB   0:00:05
