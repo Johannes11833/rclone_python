@@ -4,4 +4,5 @@
 /dist/
 rclone_python.egg-info/
 rclone_python/__pycache__/
+rclone_python/scripts/__pycache__
 .vscode/
