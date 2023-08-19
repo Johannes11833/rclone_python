@@ -141,7 +141,7 @@ def copy(
         in_path,
         out_path,
         ignore_existing=ignore_existing,
-        command="rclone copyto",
+        command="rclone copy",
         command_descr="Copying",
         show_progress=show_progress,
         listener=listener,
