@@ -141,6 +141,38 @@ def copy(
         in_path,
         out_path,
         ignore_existing=ignore_existing,
+        command="rclone copy",
+        command_descr="Copying",
+        show_progress=show_progress,
+        listener=listener,
+        args=args,
+    )
+
+
+def copyto(
+    in_path: str,
+    out_path: str,
+    ignore_existing=False,
+    show_progress=True,
+    listener: Callable[[Dict], None] = None,
+    args=None,
+):
+    """
+    Copies a file or a directory from a src path to a destination path and is typically used when renaming a file is necessary.
+    :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param out_path: The destination path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param ignore_existing: If True, all existing files are ignored and not overwritten.
+    :param show_progress: If true, show a progressbar.
+    :param listener: An event-listener that is called with every update of rclone.
+    :param args: List of additional arguments/ flags.
+    """
+    if args is None:
+        args = []
+
+    _rclone_transfer_operation(
+        in_path,
+        out_path,
+        ignore_existing=ignore_existing,
         command="rclone copyto",
         command_descr="Copying",
         show_progress=show_progress,
@@ -174,6 +206,38 @@ def move(
         out_path,
         ignore_existing=ignore_existing,
         command="rclone move",
+        command_descr="Moving",
+        show_progress=show_progress,
+        listener=listener,
+        args=args,
+    )
+
+
+def moveto(
+    in_path: str,
+    out_path: str,
+    ignore_existing=False,
+    show_progress=True,
+    listener: Callable[[Dict], None] = None,
+    args=None,
+):
+    """
+    Moves a file or a directory from a src path to a destination path and is typically used when renaming is necessary.
+    :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param out_path: The destination path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param ignore_existing: If True, all existing files are ignored and not overwritten.
+    :param show_progress: If true, show a progressbar.
+    :param listener: An event-listener that is called with every update of rclone.
+    :param args: List of additional arguments/ flags.
+    """
+    if args is None:
+        args = []
+
+    _rclone_transfer_operation(
+        in_path,
+        out_path,
+        ignore_existing=ignore_existing,
+        command="rclone moveto",
         command_descr="Moving",
         show_progress=show_progress,
         listener=listener,
