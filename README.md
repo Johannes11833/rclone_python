@@ -117,3 +117,10 @@ print(rclone.hash(HashTypes.sha1, "box:data")
 ```console
 {'video1.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b', 'video3.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b', 'video2.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b'}
 ```
+
+## Debug
+For debugging progress related functionality, set the DEBUG flag to true: 
+```python
+rclone.DEBUG = True
+```
+This will make the wrapper print the raw rclone progress. 

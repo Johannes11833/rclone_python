@@ -9,6 +9,9 @@ from rclone_python import utils
 from rclone_python.hash_types import HashTypes
 from rclone_python.remote_types import RemoteTypes
 
+# debug flag enables/disables raw output of rclone progresses in the terminal
+DEBUG = False
+
 
 def __check_installed(func):
     @wraps(func)
@@ -532,7 +535,7 @@ def _rclone_transfer_operation(
 
     # execute the upload command
     process = utils.rclone_progress(
-        command, prog_title, listener=listener, show_progress=show_progress
+        command, prog_title, listener=listener, show_progress=show_progress, debug=DEBUG
     )
 
     if process.wait() == 0:

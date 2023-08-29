@@ -94,6 +94,7 @@ def rclone_progress(
     stderr=subprocess.PIPE,
     show_progress=True,
     listener: Callable[[Dict], None] = None,
+    debug=False,
 ) -> subprocess.Popen:
     buffer = ""
     pbar = None
@@ -118,6 +119,9 @@ def rclone_progress(
             # call the listener
             if listener:
                 listener(update_dict)
+
+            if debug:
+                pbar.log(buffer)
 
             # reset the buffer
             buffer = ""
@@ -149,7 +153,7 @@ def extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], No
         # returns list of tuples: (name, progress, file_size, unit)
         prog_transferring = []
         prog_regex = re.findall(
-            r"\* +(\S+):[ ]+(\d{1,2})% \/(\d+.\d+)([a-zA-Z]+),", buffer
+            r"\* +(.+):[ ]+(\d{1,3})% \/(\d+.\d+)([a-zA-Z]+),", buffer
         )
         for item in prog_regex:
             prog_transferring.append(
