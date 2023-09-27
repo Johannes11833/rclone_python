@@ -40,7 +40,7 @@ def extract_remote_names(output_path: str = None) -> str:
             "\n\tA more detailed overview can be found here: https://rclone.org/overview/"
         )
         o.write('\n\t"""')
-        for p in providers:
+        for p in sorted(providers):
             o.write(f'\n\t{p[0]}="{p[1]}"')
 
 

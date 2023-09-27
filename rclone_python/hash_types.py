@@ -6,12 +6,12 @@ class HashTypes(Enum):
     A more detailed overview can be found here: https://rclone.org/commands/rclone_hashsum/
     """
 
-    md5 = "md5"
-    sha1 = "sha1"
-    whirlpool = "whirlpool"
     crc32 = "crc32"
-    sha256 = "sha256"
     dropbox = "dropbox"
     hidrive = "hidrive"
     mailru = "mailru"
+    md5 = "md5"
     quickxor = "quickxor"
+    sha1 = "sha1"
+    sha256 = "sha256"
+    whirlpool = "whirlpool"

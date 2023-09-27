@@ -32,7 +32,7 @@ def update_hashes(output_path: str):
             "\n\tA more detailed overview can be found here: https://rclone.org/commands/rclone_hashsum/"
         )
         o.write('\n\t"""')
-        for h in hashes:
+        for h in sorted(hashes):
             o.write(f'\n\t{h}="{h}"')
 
 
