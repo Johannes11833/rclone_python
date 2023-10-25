@@ -611,7 +611,12 @@ def _rclone_transfer_operation(
 
     # execute the upload command
     process = utils.rclone_progress(
-        command, prog_title, listener=listener, show_progress=show_progress, debug=DEBUG, pbar=pbar,
+        command,
+        prog_title,
+        listener=listener,
+        show_progress=show_progress,
+        debug=DEBUG,
+        pbar=pbar,
     )
 
     if process.wait() == 0:
