@@ -3,6 +3,7 @@ import re
 import logging
 from functools import wraps
 from shutil import which
+from subprocess import Popen
 from typing import Optional, Union, List, Dict, Callable
 
 from rclone_python import utils
@@ -127,7 +128,8 @@ def copy(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
-):
+    wait_to_finish:bool = True,
+) -> Optional[Popen]:
     """
     Copies a file or a directory from a src path to a destination path.
     :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
@@ -136,6 +138,7 @@ def copy(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
+    :param wait_to_finish: A boolean flag to choose between sync (default) and async operation. Returns a handle for async mode
     """
     if args is None:
         args = []
@@ -149,6 +152,7 @@ def copy(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        wait_to_finish=wait_to_finish,
     )
 
 
@@ -159,7 +163,8 @@ def copyto(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
-):
+    wait_to_finish:bool = True,
+) -> Optional[Popen]:
     """
     Copies a file or a directory from a src path to a destination path and is typically used when renaming a file is necessary.
     :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
@@ -168,6 +173,7 @@ def copyto(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
+    :param wait_to_finish: A boolean flag to choose between sync (default) and async operation. Returns a handle for async mode
     """
     if args is None:
         args = []
@@ -181,6 +187,7 @@ def copyto(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        wait_to_finish=wait_to_finish,
     )
 
 
@@ -191,7 +198,8 @@ def move(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
-):
+    wait_to_finish:bool = True,
+) -> Optional[Popen]:
     """
     Moves a file or a directory from a src path to a destination path.
     :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
@@ -200,6 +208,7 @@ def move(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
+    :param wait_to_finish: A boolean flag to choose between sync (default) and async operation. Returns a handle for async mode
     """
     if args is None:
         args = []
@@ -213,6 +222,7 @@ def move(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        wait_to_finish=wait_to_finish,
     )
 
 
@@ -223,7 +233,8 @@ def moveto(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
-):
+    wait_to_finish:bool = True,
+) -> Optional[Popen]:
     """
     Moves a file or a directory from a src path to a destination path and is typically used when renaming is necessary.
     :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
@@ -232,6 +243,7 @@ def moveto(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
+    :param wait_to_finish: A boolean flag to choose between sync (default) and async operation. Returns a handle for async mode
     """
     if args is None:
         args = []
@@ -245,6 +257,7 @@ def moveto(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        wait_to_finish=wait_to_finish,
     )
 
 
@@ -254,7 +267,8 @@ def sync(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
-):
+    wait_to_finish:bool = True,
+) -> Optional[Popen]:
     """
     Sync the source to the destination, changing the destination only. Doesn't transfer files that are identical on source and destination, testing by size and modification time or MD5SUM.
     :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
@@ -262,6 +276,7 @@ def sync(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
+    :param wait_to_finish: A boolean flag to choose between sync (default) and async operation. Returns a handle for async mode
     """
     if args is None:
         args = []
@@ -274,6 +289,7 @@ def sync(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        wait_to_finish=wait_to_finish,
     )
 
 
@@ -566,7 +582,8 @@ def _rclone_transfer_operation(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
-):
+    wait_to_finish:bool = True,
+) -> Optional[Popen]:
     """Executes the rclone transfer operation (e.g. copyto, move, ...) and displays the progress of every individual file.
 
     Args:
@@ -578,6 +595,10 @@ def _rclone_transfer_operation(
         show_progress (bool, optional): If true, show a progressbar.
         listener (Callable[[Dict], None], optional): An event-listener that is called with every update of rclone.
         args: List of additional arguments/ flags.
+        wait_to_finish (bool): A flag to choose between sync (default) and async operation
+
+    Returns:
+        handle to the subprocess or None depending on wait_to_finish
     """
     if args is None:
         args = []
@@ -601,6 +622,8 @@ def _rclone_transfer_operation(
     process = utils.rclone_progress(
         command, prog_title, listener=listener, show_progress=show_progress, debug=DEBUG
     )
+    if not wait_to_finish:
+        return process
 
     if process.wait() == 0:
         logging.info("Cloud upload completed.")
