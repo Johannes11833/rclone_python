@@ -90,6 +90,7 @@ def rclone_progress(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     debug=False,
+    pbar: Optional[Progress] = None,
 ) -> subprocess.Popen:
     buffer = ""
     pbar = None
@@ -97,7 +98,10 @@ def rclone_progress(
     subprocesses = {}
 
     if show_progress:
-        pbar, total_progress_id = create_progress_bar(pbar_title)
+        if pbar is None:
+            pbar = create_progress_bar(pbar_title)
+        pbar.start()
+        total_progress_id = pbar.add_task(pbar_title, total=None)
 
     process = subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=stderr, shell=True
@@ -180,7 +184,7 @@ def extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], No
         return False, None
 
 
-def create_progress_bar(pbar_title: str) -> Tuple[Progress, TaskID]:
+def create_progress_bar(pbar_title: str) -> Progress:
     pbar = Progress(
         TextColumn("[progress.description]{task.description}"),
         SpinnerColumn(),
@@ -189,11 +193,8 @@ def create_progress_bar(pbar_title: str) -> Tuple[Progress, TaskID]:
         DownloadColumn(binary_units=True),
         TimeRemainingColumn(),
     )
-    pbar.start()
 
-    total_progress = pbar.add_task(pbar_title, total=None)
-
-    return pbar, total_progress
+    return pbar
 
 
 def get_task(id: TaskID, progress: Progress) -> Task:
