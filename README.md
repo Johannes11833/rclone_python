@@ -118,6 +118,38 @@ print(rclone.hash(HashTypes.sha1, "box:data")
 {'video1.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b', 'video3.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b', 'video2.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b'}
 ```
 
+## Custom Progressbar
+You can use your own rich progressbar with all transfer operations.
+This allows you to customize the columns to be displayed.
+A list of all rich-progress columns can be found [here](https://rich.readthedocs.io/en/stable/progress.html#columns).
+
+```python
+from rclone_python import rclone
+
+from rich.progress import (
+    Progress,
+    TextColumn,
+    BarColumn,
+    TaskProgressColumn,
+    TransferSpeedColumn,
+)
+
+pbar = Progress(
+    TextColumn("[progress.description]{task.description}"),
+    BarColumn(),
+    TaskProgressColumn(),
+    TransferSpeedColumn(),
+)
+rclone.copy("data", "box:rclone_test/data1", pbar=pbar)
+```
+
+```console
+Copying data to data1 ━━━━━━╸━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  17% 5.3 MB/s                                                                                                            
+ ├─video1.mp4         ━━━━━━━━━━━━━━━╺━━━━━━━━━━━━━━━━━━━━━━━━  38% 4.2 MB/s                                                                                                            
+ ├─video2.mp4         ━╸━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   5% 1.6 MB/s
+ └─another.mp4        ━╸━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   4% 1.4 MB/s
+```
+
 ## Debug
 For debugging progress related functionality, set the DEBUG flag to true: 
 ```python
