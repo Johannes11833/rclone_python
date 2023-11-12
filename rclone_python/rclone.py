@@ -556,6 +556,13 @@ def version(
         return yours, latest, beta
 
 
+class RcloneException(ChildProcessError):
+    def __init__(self, description, error_msg):
+        self.description = description
+        self.error_msg = error_msg
+        super().__init__(f"{description}. Error message: \n{error_msg}")
+
+
 @__check_installed
 def _rclone_transfer_operation(
     in_path: str,
@@ -606,7 +613,7 @@ def _rclone_transfer_operation(
         logging.info("Cloud upload completed.")
     else:
         _, err = process.communicate()
-        raise Exception(
-            f"Copy/Move operation from {in_path} to {out_path}"
-            f' failed with error message:\n{err.decode("utf-8")}'
+        raise RcloneException(
+            description=f"{command_descr} from {in_path} to {out_path} failed",
+            error_msg=err.decode("utf-8"),
         )
