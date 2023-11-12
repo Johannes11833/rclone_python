@@ -1,6 +1,6 @@
 import re
 import subprocess
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from rich.progress import Progress, TaskID, Task
 from pathlib import Path
 
@@ -93,13 +93,12 @@ def rclone_progress(
     pbar: Optional[Progress] = None,
 ) -> subprocess.Popen:
     buffer = ""
-    pbar = None
     total_progress_id = None
     subprocesses = {}
 
     if show_progress:
         if pbar is None:
-            pbar = create_progress_bar(pbar_title)
+            pbar = create_progress_bar()
         pbar.start()
         total_progress_id = pbar.add_task(pbar_title, total=None)
 
@@ -184,7 +183,7 @@ def extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], No
         return False, None
 
 
-def create_progress_bar(pbar_title: str) -> Progress:
+def create_progress_bar() -> Progress:
     pbar = Progress(
         TextColumn("[progress.description]{task.description}"),
         SpinnerColumn(),

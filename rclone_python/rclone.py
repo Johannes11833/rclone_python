@@ -151,6 +151,7 @@ def copy(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        pbar=pbar,
     )
 
 
@@ -185,6 +186,7 @@ def copyto(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        pbar=pbar,
     )
 
 
@@ -219,6 +221,7 @@ def move(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        pbar=pbar,
     )
 
 
@@ -253,6 +256,7 @@ def moveto(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        pbar=pbar,
     )
 
 
@@ -284,6 +288,7 @@ def sync(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        pbar=pbar,
     )
 
 
