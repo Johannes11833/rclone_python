@@ -615,5 +615,5 @@ def _rclone_transfer_operation(
         _, err = process.communicate()
         raise RcloneException(
             description=f"{command_descr} from {in_path} to {out_path} failed",
-            error_message=err.decode("utf-8")
+            error_msg=err.decode("utf-8"),
         )
