@@ -127,6 +127,7 @@ def copy(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
+    pbar=None,
 ):
     """
     Copies a file or a directory from a src path to a destination path.
@@ -136,6 +137,7 @@ def copy(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
+    :param pbar: Optional progress bar for integration with custom TUI
     """
     if args is None:
         args = []
@@ -149,6 +151,7 @@ def copy(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        pbar=pbar,
     )
 
 
@@ -159,6 +162,7 @@ def copyto(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
+    pbar=None,
 ):
     """
     Copies a file or a directory from a src path to a destination path and is typically used when renaming a file is necessary.
@@ -168,6 +172,7 @@ def copyto(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
+    :param pbar: Optional progress bar for integration with custom TUI
     """
     if args is None:
         args = []
@@ -181,6 +186,7 @@ def copyto(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        pbar=pbar,
     )
 
 
@@ -191,6 +197,7 @@ def move(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
+    pbar=None,
 ):
     """
     Moves a file or a directory from a src path to a destination path.
@@ -200,6 +207,7 @@ def move(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
+    :param pbar: Optional progress bar for integration with custom TUI
     """
     if args is None:
         args = []
@@ -213,6 +221,7 @@ def move(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        pbar=pbar,
     )
 
 
@@ -223,6 +232,7 @@ def moveto(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
+    pbar=None,
 ):
     """
     Moves a file or a directory from a src path to a destination path and is typically used when renaming is necessary.
@@ -232,6 +242,7 @@ def moveto(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
+    :param pbar: Optional progress bar for integration with custom TUI
     """
     if args is None:
         args = []
@@ -245,6 +256,7 @@ def moveto(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        pbar=pbar,
     )
 
 
@@ -254,6 +266,7 @@ def sync(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
+    pbar=None,
 ):
     """
     Sync the source to the destination, changing the destination only. Doesn't transfer files that are identical on source and destination, testing by size and modification time or MD5SUM.
@@ -262,6 +275,7 @@ def sync(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
+    :param pbar: Optional progress bar for integration with custom TUI
     """
     if args is None:
         args = []
@@ -274,6 +288,7 @@ def sync(
         show_progress=show_progress,
         listener=listener,
         args=args,
+        pbar=pbar,
     )
 
 
@@ -573,6 +588,7 @@ def _rclone_transfer_operation(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
+    pbar=None,
 ):
     """Executes the rclone transfer operation (e.g. copyto, move, ...) and displays the progress of every individual file.
 
@@ -585,6 +601,7 @@ def _rclone_transfer_operation(
         show_progress (bool, optional): If true, show a progressbar.
         listener (Callable[[Dict], None], optional): An event-listener that is called with every update of rclone.
         args: List of additional arguments/ flags.
+        pbar: a rich.Progress created under a parent live session
     """
     if args is None:
         args = []
@@ -606,7 +623,12 @@ def _rclone_transfer_operation(
 
     # execute the upload command
     process = utils.rclone_progress(
-        command, prog_title, listener=listener, show_progress=show_progress, debug=DEBUG
+        command,
+        prog_title,
+        listener=listener,
+        show_progress=show_progress,
+        debug=DEBUG,
+        pbar=pbar,
     )
 
     if process.wait() == 0:
