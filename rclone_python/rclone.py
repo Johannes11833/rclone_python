@@ -143,7 +143,7 @@ def copy(
     if args is None:
         args = []
 
-    _rclone_transfer_operation(
+    return _rclone_transfer_operation(
         in_path,
         out_path,
         ignore_existing=ignore_existing,
@@ -178,7 +178,7 @@ def copyto(
     if args is None:
         args = []
 
-    _rclone_transfer_operation(
+    return _rclone_transfer_operation(
         in_path,
         out_path,
         ignore_existing=ignore_existing,
@@ -213,7 +213,7 @@ def move(
     if args is None:
         args = []
 
-    _rclone_transfer_operation(
+    return _rclone_transfer_operation(
         in_path,
         out_path,
         ignore_existing=ignore_existing,
@@ -248,7 +248,7 @@ def moveto(
     if args is None:
         args = []
 
-    _rclone_transfer_operation(
+    return _rclone_transfer_operation(
         in_path,
         out_path,
         ignore_existing=ignore_existing,
@@ -281,7 +281,7 @@ def sync(
     if args is None:
         args = []
 
-    _rclone_transfer_operation(
+    return _rclone_transfer_operation(
         src_path,
         dest_path,
         command="rclone sync",
@@ -598,7 +598,8 @@ def _rclone_transfer_operation(
         wait_to_finish (bool): A flag to choose between sync (default) and async operation
 
     Returns:
-        handle to the subprocess or None depending on wait_to_finish
+        handle to the subprocess if `wait_on_finish`
+        None after waiting until operation is complete otherwise
     """
     if args is None:
         args = []
