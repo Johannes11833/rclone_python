@@ -6,7 +6,7 @@ import subprocess as sp
 from get_version import get_version
 
 
-def update_hashes(output_path: str):
+def update_hashes(output_path: str) -> None:
     """Updates the hash_types.py file to include all supported hash algorithms.
 
     Args:

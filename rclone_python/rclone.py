@@ -6,7 +6,22 @@ import logging
 import subprocess
 from functools import wraps
 from shutil import which
-from typing import Optional, Dict, Callable
+from typing import (
+    Optional,
+    Dict,
+    Callable,
+    TypeVar,
+    ParamSpec,
+    Sequence,
+    Any,
+    cast,
+    List,
+    Union,
+)
+
+import rich.progress
+
+from rich.progress import Progress
 
 from rclone_python import utils
 from rclone_python.hash_types import HashTypes
@@ -15,12 +30,17 @@ from rclone_python.remote_types import RemoteTypes
 # debug flag enables/disables raw output of rclone progresses in the terminal
 DEBUG = False
 
-_LISTENER = Optional[Callable[[Dict], None]]
+_LISTENER = Optional[Callable[[Dict[str, Any]], None]]
+_PROGRESS = Optional[Progress]
 
 
-def __check_installed(func):
+_T = TypeVar("_T")
+_PARAMS = ParamSpec("_PARAMS")
+
+
+def __check_installed(func: Callable[_PARAMS, _T]) -> Callable[_PARAMS, _T]:
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: _PARAMS.args, **kwargs: _PARAMS.kwargs) -> _T:
         if not is_installed():
             raise Exception(
                 "rclone is not installed on this system. Please install it here: https://rclone.org/"
@@ -82,8 +102,8 @@ def create_remote(
     remote_type: str | RemoteTypes,
     client_id: str | None = None,
     client_secret: str | None = None,
-    **kwargs,
-):
+    **kwargs: object,
+) -> None:
     """Creates a new remote with name, type and options.
 
     Args:
@@ -128,12 +148,12 @@ def create_remote(
 def copy(
     in_path: str,
     out_path: str,
-    ignore_existing=False,
-    show_progress=True,
+    ignore_existing: bool = False,
+    show_progress: bool = True,
     listener: _LISTENER = None,
-    args=None,
-    pbar=None,
-):
+    args: list[str] | None = None,
+    pbar: _PROGRESS = None,
+) -> None:
     """
     Copies a file or a directory from a src path to a destination path.
     :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
@@ -163,12 +183,12 @@ def copy(
 def copyto(
     in_path: str,
     out_path: str,
-    ignore_existing=False,
-    show_progress=True,
+    ignore_existing: bool = False,
+    show_progress: bool = True,
     listener: _LISTENER = None,
     args: list[str] | None = None,
-    pbar=None,
-):
+    pbar: _PROGRESS = None,
+) -> None:
     """
     Copies a file or a directory from a src path to a destination path and is typically used when renaming a file is necessary.
     :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
@@ -198,12 +218,12 @@ def copyto(
 def move(
     in_path: str,
     out_path: str,
-    ignore_existing=False,
-    show_progress=True,
+    ignore_existing: bool = False,
+    show_progress: bool = True,
     listener: _LISTENER = None,
-    args=None,
-    pbar=None,
-):
+    args: list[str] | None = None,
+    pbar: _PROGRESS = None,
+) -> None:
     """
     Moves a file or a directory from a src path to a destination path.
     :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
@@ -233,12 +253,12 @@ def move(
 def moveto(
     in_path: str,
     out_path: str,
-    ignore_existing=False,
-    show_progress=True,
+    ignore_existing: bool = False,
+    show_progress: bool = True,
     listener: _LISTENER = None,
-    args=None,
-    pbar=None,
-):
+    args: list[str] | None = None,
+    pbar: _PROGRESS = None,
+) -> None:
     """
     Moves a file or a directory from a src path to a destination path and is typically used when renaming is necessary.
     :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
@@ -268,11 +288,11 @@ def moveto(
 def sync(
     src_path: str,
     dest_path: str,
-    show_progress=True,
+    show_progress: bool = True,
     listener: _LISTENER = None,
-    args=None,
-    pbar=None,
-):
+    args: list[str] | None = None,
+    pbar: _PROGRESS = None,
+) -> None:
     """
     Sync the source to the destination, changing the destination only. Doesn't transfer files that are identical on source and destination, testing by size and modification time or MD5SUM.
     :param in_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
@@ -311,7 +331,7 @@ def get_remotes() -> list[str]:
 
 
 @__check_installed
-def purge(path: str, args=None):
+def purge(path: str, args: list[str] | None = None) -> None:
     """
     Purges the specified folder. This means that unlike with delete, also all the folders are removed.
     :param args: List of additional arguments/ flags.
@@ -331,7 +351,7 @@ def purge(path: str, args=None):
 
 
 @__check_installed
-def delete(path: str, args=None):
+def delete(path: str, args: list[str] | None = None) -> None:
     """
     Deletes a file or a folder. When deleting a folder, all the files in it and it's subdirectories are removed,
     but not the folder structure itself.
@@ -356,8 +376,8 @@ def delete(path: str, args=None):
 def link(
     path: str,
     expire: str | None = None,
-    unlink=False,
-    args=None,
+    unlink: bool = False,
+    args: list[str] | None = None,
 ) -> str:
     """
     Generates a public link to a file/directory.
@@ -390,9 +410,9 @@ def link(
 def ls(
     path: str,
     max_depth: int | None = None,
-    dirs_only=False,
-    files_only=False,
-    args=None,
+    dirs_only: bool = False,
+    files_only: bool = False,
+    args: list[str] | None = None,
 ) -> list[dict[str, int | str]]:
     """
     Lists the files in a directory.
@@ -420,7 +440,7 @@ def ls(
     process = utils.run_cmd(command, args)
 
     if process.returncode == 0:
-        return json.loads(process.stdout)
+        return cast(List[Dict[str, Union[int, str]]], json.loads(process.stdout))
     else:
         raise Exception(f"ls operation on {path} failed with:\n{process.stderr}")
 
@@ -453,7 +473,7 @@ def tree(
 def hash(
     hash: str | HashTypes,
     path: str,
-    download=False,
+    download: bool = False,
     checkfile: str | None = None,
     output_file: str | None = None,
     args: list[str] | None = None,
@@ -497,7 +517,7 @@ def hash(
     if output_file is not None:
         args.append(f'--output-file "{output_file}"')
 
-    process: subprocess.CompletedProcess = utils.run_cmd(
+    process: subprocess.CompletedProcess[str] = utils.run_cmd(
         f'rclone hashsum "{hash}" "{path}"', args
     )
 
@@ -542,7 +562,7 @@ def hash(
 
 @__check_installed
 def version(
-    check=False,
+    check: bool = False,
     args: list[str] | None = None,
 ) -> str | tuple[str, str, str]:
     """Get the rclone version number.
@@ -578,7 +598,7 @@ def version(
 
 
 class RcloneException(ChildProcessError):
-    def __init__(self, description, error_msg):
+    def __init__(self, description: str, error_msg: str):
         self.description = description
         self.error_msg = error_msg
         super().__init__(f"{description}. Error message: \n{error_msg}")
@@ -590,12 +610,12 @@ def _rclone_transfer_operation(
     out_path: str,
     command: str,
     command_descr: str,
-    ignore_existing=False,
-    show_progress=True,
+    ignore_existing: bool = False,
+    show_progress: bool = True,
     listener: _LISTENER = None,
-    args=None,
-    pbar=None,
-):
+    args: Sequence[str] | None = None,
+    pbar: rich.progress.Progress | None = None,
+) -> None:
     """Executes the rclone transfer operation (e.g. copyto, move, ...) and displays the progress of every individual file.
 
     Args:

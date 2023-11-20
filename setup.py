@@ -1,9 +1,8 @@
 from setuptools import setup
-
+from pathlib import Path
 from rclone_python import VERSION
 
-with open("README.md") as f:
-    long_description = f.read()
+long_description = Path("README.md").read_text()
 
 setup(
     name="rclone-python",

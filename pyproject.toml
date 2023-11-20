@@ -1,3 +1,7 @@
 [tool.ruff]
 fix = true
+preview = true
 extend-select = ["UP", "FURB", "B"]
+
+[tool.mypy]
+strict=true
