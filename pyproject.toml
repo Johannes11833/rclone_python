@@ -1,0 +1,3 @@
+[tool.ruff]
+fix = true
+extend-select = ["UP", "FURB", "B"]

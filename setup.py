@@ -2,7 +2,7 @@ from setuptools import setup
 
 from rclone_python import VERSION
 
-with open("README.md", "r") as f:
+with open("README.md") as f:
     long_description = f.read()
 
 setup(

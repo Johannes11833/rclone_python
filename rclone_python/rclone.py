@@ -6,7 +6,7 @@ import logging
 import subprocess
 from functools import wraps
 from shutil import which
-from typing import Optional, Union, List, Dict, Callable
+from typing import Optional, Dict, Callable
 
 from rclone_python import utils
 from rclone_python.hash_types import HashTypes
@@ -79,9 +79,9 @@ def check_remote_existing(remote_name: str) -> bool:
 @__check_installed
 def create_remote(
     remote_name: str,
-    remote_type: Union[str, RemoteTypes],
-    client_id: Union[str, None] = None,
-    client_secret: Union[str, None] = None,
+    remote_type: str | RemoteTypes,
+    client_id: str | None = None,
+    client_secret: str | None = None,
     **kwargs,
 ):
     """Creates a new remote with name, type and options.
@@ -298,7 +298,7 @@ def sync(
 
 
 @__check_installed
-def get_remotes() -> List[str]:
+def get_remotes() -> list[str]:
     """
     :return: A list of all available remotes.
     """
@@ -355,7 +355,7 @@ def delete(path: str, args=None):
 @__check_installed
 def link(
     path: str,
-    expire: Union[str, None] = None,
+    expire: str | None = None,
     unlink=False,
     args=None,
 ) -> str:
@@ -389,11 +389,11 @@ def link(
 @__check_installed
 def ls(
     path: str,
-    max_depth: Union[int, None] = None,
+    max_depth: int | None = None,
     dirs_only=False,
     files_only=False,
     args=None,
-) -> List[Dict[str, Union[int, str]]]:
+) -> list[dict[str, int | str]]:
     """
     Lists the files in a directory.
     :param path: The path to the folder that should be examined.
@@ -427,7 +427,7 @@ def ls(
 
 def tree(
     path: str,
-    args: List[str] | None = None,
+    args: list[str] | None = None,
 ) -> str:
     """Returns the contents of the remote path in a tree like fashion.
 
@@ -451,13 +451,13 @@ def tree(
 
 @__check_installed
 def hash(
-    hash: Union[str, HashTypes],
+    hash: str | HashTypes,
     path: str,
     download=False,
-    checkfile: Optional[str] = None,
-    output_file: Optional[str] = None,
-    args: List[str] | None = None,
-) -> Union[None, str, bool, Dict[str, str], Dict[str, bool]]:
+    checkfile: str | None = None,
+    output_file: str | None = None,
+    args: list[str] | None = None,
+) -> None | str | bool | dict[str, str] | dict[str, bool]:
     """Produces a hashsum file for all the objects in the path.
 
     Args:
@@ -543,8 +543,8 @@ def hash(
 @__check_installed
 def version(
     check=False,
-    args: List[str] | None = None,
-) -> Union[str, tuple[str, str, str]]:
+    args: list[str] | None = None,
+) -> str | tuple[str, str, str]:
     """Get the rclone version number.
 
     Args:
