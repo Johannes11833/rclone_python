@@ -376,7 +376,7 @@ def link(
     if expire is not None:
         args.append(f"--expire {expire}")
     if unlink:
-        args.append(f"--unlink")
+        args.append("--unlink")
 
     process = utils.run_cmd(command, args)
 
@@ -413,7 +413,7 @@ def ls(
     if max_depth is not None:
         args.append(f"--max-depth {max_depth}")
     if dirs_only:
-        args.append(f"--dirs-only")
+        args.append("--dirs-only")
     if files_only:
         args.append("--files-only")
 
@@ -501,7 +501,7 @@ def hash(
         f'rclone hashsum "{hash}" "{path}"', args
     )
 
-    lines = process.stdout.splitlines()
+    lines: list[str] = process.stdout.splitlines()
 
     exception = False
 
@@ -510,33 +510,30 @@ def hash(
             exception = True
         else:
             # validate that the checkfile command succeeded, by checking if the output has the expected form
-            for l in lines:
-                if not (l.startswith("= ") or l.startswith("* ")):
-                    exception = True
-                    break
+            exception = not all(line.startswith(("= ", "* ")) for line in lines)
 
     if exception:
-        raise Exception(
+        raise RuntimeError(
             f"hashsum operation on {path} with hash='{hash}' failed with:\n{process.stderr}"
         )
 
     if output_file is None:
         # each line contains the hashsum first, followed by the name of the file
-        hashsums = {}
+        hashsums: dict[str, str] | dict[str, bool] = {}
 
-        for l in lines:
-            if len(l) > 0:
-                value, key = l.split()
+        for line in lines:
+            if line:
+                value, key = line.split()
 
                 if checkfile is None:
-                    hashsums[key] = value
+                    hashsums[key] = value  # type: ignore[assignment]
                 else:
                     # in checkfile mode, value is '=' for valid and '*' for invalid files
-                    hashsums[key] = value == "="
+                    hashsums[key] = value == "="  # type: ignore[assignment]
 
         # for only a single file return the value instead of the dict
         if len(hashsums) == 1:
-            return next(iter(hashsums.values()))
+            return list(hashsums.values())[0]  # type: ignore[return-value]
 
         return hashsums
     else:

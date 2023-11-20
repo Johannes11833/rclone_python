@@ -1,11 +1,10 @@
 import re
 import subprocess
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, Sequence
+from typing import Any, Callable, Dict, Optional, Tuple, Union, Sequence
 from rich.progress import Progress, TaskID, Task
 from pathlib import Path
 
 from rich.progress import (
-    Progress,
     TextColumn,
     BarColumn,
     TaskProgressColumn,
@@ -133,7 +132,7 @@ def rclone_progress(
 
     if show_progress:
         complete_task(total_progress_id, pbar)
-        for _, task_id in subprocesses.items():
+        for task_id in subprocesses.values():
             # hide all subprocesses
             pbar.update(task_id=task_id, visible=False)
         pbar.stop()

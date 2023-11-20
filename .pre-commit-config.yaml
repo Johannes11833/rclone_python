@@ -7,3 +7,7 @@ repos:
     rev: v1.7.0
     hooks:
     -   id: mypy
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.1.6
+  hooks:
+    - id: ruff
