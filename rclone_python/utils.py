@@ -1,6 +1,6 @@
 import re
 import subprocess
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, Sequence
 from rich.progress import Progress, TaskID, Task
 from pathlib import Path
 
@@ -18,14 +18,16 @@ from rich.progress import (
 #                               General Functions                              #
 # ---------------------------------------------------------------------------- #
 
+_LISTENER = Optional[Callable[[Dict], None]]
 
-def args2string(args: List[str]) -> str:
+
+def args2string(args: Sequence[str]) -> str:
     # separate flags/ named arguments by a space
     return " ".join(args)
 
 
 def run_cmd(
-    command: str, args: List[str] = (), shell=True, encoding="utf-8"
+    command: str, args: Sequence[str] = (), shell=True, encoding="utf-8"
 ) -> subprocess.CompletedProcess:
     # add optional arguments and flags to the command
     args_str = args2string(args)
@@ -88,29 +90,31 @@ def rclone_progress(
     pbar_title: str,
     stderr=subprocess.PIPE,
     show_progress=True,
-    listener: Callable[[Dict], None] = None,
+    listener: _LISTENER = None,
     debug=False,
     pbar: Optional[Progress] = None,
 ) -> subprocess.Popen:
     buffer = ""
     total_progress_id = None
-    subprocesses = {}
+    subprocesses: Dict[str, TaskID] = {}
 
     if show_progress:
         if pbar is None:
             pbar = create_progress_bar()
         pbar.start()
         total_progress_id = pbar.add_task(pbar_title, total=None)
-
+    assert pbar is not None
     process = subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=stderr, shell=True
     )
+    assert process.stdout is not None
     for line in iter(process.stdout.readline, b""):
         var = line.decode()
 
         valid, update_dict = extract_rclone_progress(buffer)
 
         if valid:
+            assert update_dict is not None
             if show_progress:
                 update_tasks(pbar, total_progress_id, update_dict, subprocesses)
 
@@ -164,7 +168,7 @@ def extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], No
                 )
             )
 
-        out = {"prog_transferring": prog_transferring}
+        out: dict[str, Any] = {"prog_transferring": prog_transferring}
         sent_bits, total_bits, progress, transfer_speed_str, eta = reg_transferred[0]
         out["progress"] = float(progress.strip())
         out["total_bits"] = float(re.findall(r"\d+.\d+", total_bits)[0])

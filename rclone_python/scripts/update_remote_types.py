@@ -6,7 +6,7 @@ import subprocess as sp
 from get_version import get_version
 
 
-def extract_remote_names(output_path: str = None) -> str:
+def extract_remote_names(output_path: str) -> None:
     """Updates the remote_types.py file to the newest supported backends.
 
     Args:

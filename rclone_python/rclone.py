@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import json
 import re
 import logging
+import subprocess
 from functools import wraps
 from shutil import which
 from typing import Optional, Union, List, Dict, Callable
@@ -11,6 +14,8 @@ from rclone_python.remote_types import RemoteTypes
 
 # debug flag enables/disables raw output of rclone progresses in the terminal
 DEBUG = False
+
+_LISTENER = Optional[Callable[[Dict], None]]
 
 
 def __check_installed(func):
@@ -34,7 +39,7 @@ def is_installed() -> bool:
 
 
 @__check_installed
-def about(remote_name: str):
+def about(remote_name: str) -> object:
     """
     Executes the rclone about command and returns the retrieved json as a dictionary.
     :param remote_name: The name of the remote to examine.
@@ -125,7 +130,7 @@ def copy(
     out_path: str,
     ignore_existing=False,
     show_progress=True,
-    listener: Callable[[Dict], None] = None,
+    listener: _LISTENER = None,
     args=None,
     pbar=None,
 ):
@@ -160,8 +165,8 @@ def copyto(
     out_path: str,
     ignore_existing=False,
     show_progress=True,
-    listener: Callable[[Dict], None] = None,
-    args=None,
+    listener: _LISTENER = None,
+    args: list[str] | None = None,
     pbar=None,
 ):
     """
@@ -195,7 +200,7 @@ def move(
     out_path: str,
     ignore_existing=False,
     show_progress=True,
-    listener: Callable[[Dict], None] = None,
+    listener: _LISTENER = None,
     args=None,
     pbar=None,
 ):
@@ -230,7 +235,7 @@ def moveto(
     out_path: str,
     ignore_existing=False,
     show_progress=True,
-    listener: Callable[[Dict], None] = None,
+    listener: _LISTENER = None,
     args=None,
     pbar=None,
 ):
@@ -264,7 +269,7 @@ def sync(
     src_path: str,
     dest_path: str,
     show_progress=True,
-    listener: Callable[[Dict], None] = None,
+    listener: _LISTENER = None,
     args=None,
     pbar=None,
 ):
@@ -422,7 +427,7 @@ def ls(
 
 def tree(
     path: str,
-    args: List[str] = None,
+    args: List[str] | None = None,
 ) -> str:
     """Returns the contents of the remote path in a tree like fashion.
 
@@ -451,7 +456,7 @@ def hash(
     download=False,
     checkfile: Optional[str] = None,
     output_file: Optional[str] = None,
-    args: List[str] = None,
+    args: List[str] | None = None,
 ) -> Union[None, str, bool, Dict[str, str], Dict[str, bool]]:
     """Produces a hashsum file for all the objects in the path.
 
@@ -492,7 +497,9 @@ def hash(
     if output_file is not None:
         args.append(f'--output-file "{output_file}"')
 
-    process: str = utils.run_cmd(f'rclone hashsum "{hash}" "{path}"', args)
+    process: subprocess.CompletedProcess = utils.run_cmd(
+        f'rclone hashsum "{hash}" "{path}"', args
+    )
 
     lines = process.stdout.splitlines()
 
@@ -532,13 +539,15 @@ def hash(
             return next(iter(hashsums.values()))
 
         return hashsums
+    else:
+        return None
 
 
 @__check_installed
 def version(
     check=False,
-    args: List[str] = None,
-) -> Union[str, List[str]]:
+    args: List[str] | None = None,
+) -> Union[str, tuple[str, str, str]]:
     """Get the rclone version number.
 
     Args:
@@ -586,7 +595,7 @@ def _rclone_transfer_operation(
     command_descr: str,
     ignore_existing=False,
     show_progress=True,
-    listener: Callable[[Dict], None] = None,
+    listener: _LISTENER = None,
     args=None,
     pbar=None,
 ):
