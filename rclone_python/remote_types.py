@@ -2,12 +2,13 @@ from enum import Enum
 
 
 class RemoteTypes(Enum):
-    """These are all the cloud systems support by rclone (generated with v1.64.2).
+    """These are all the cloud systems support by rclone (generated with v1.65.0).
     A more detailed overview can be found here: https://rclone.org/overview/
     """
 
     amazon_cloud_drive = "amazon cloud drive"
     azureblob = "azureblob"
+    azurefiles = "azurefiles"
     b2 = "b2"
     box = "box"
     cache = "cache"
@@ -26,9 +27,11 @@ class RemoteTypes(Enum):
     hdfs = "hdfs"
     hidrive = "hidrive"
     http = "http"
+    imagekit = "imagekit"
     internetarchive = "internetarchive"
     jottacloud = "jottacloud"
     koofr = "koofr"
+    linkbox = "linkbox"
     local = "local"
     mailru = "mailru"
     mega = "mega"
