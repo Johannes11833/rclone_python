@@ -20,8 +20,13 @@ from rich.progress import (
 
 
 def args2string(args: List[str]) -> str:
-    # separate flags/ named arguments by a space
-    return " ".join(args)
+    out = ""
+
+    for item in args:
+        # separate flags/ named arguments by a space
+        out += f" {item}"
+
+    return out
 
 
 def run_cmd(
