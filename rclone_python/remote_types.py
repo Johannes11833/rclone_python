@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class RemoteTypes(Enum):
-    """These are all the cloud systems support by rclone (generated with v1.66.0).
+    """These are all the cloud systems support by rclone (generated with v1.67.0).
     A more detailed overview can be found here: https://rclone.org/overview/
     """
 
@@ -56,6 +56,7 @@ class RemoteTypes(Enum):
     sugarsync = "sugarsync"
     swift = "swift"
     tardigrade = "tardigrade"
+    ulozto = "ulozto"
     union = "union"
     uptobox = "uptobox"
     webdav = "webdav"
