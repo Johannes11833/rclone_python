@@ -154,6 +154,46 @@ def copy(
         pbar=pbar,
     )
 
+def copyid(
+    remote_name: str,
+    file_id: str,
+    out_path: str,
+    ignore_existing=False,
+    show_progress=True,
+    listener: Callable[[Dict], None] = None,
+    args=None,
+    pbar=None,
+):
+    """
+    Copies a file based on id to a destination path.
+    :param remote_name: Specify the remote with 'remote_name'
+    :param file_id: The source file id
+    :param out_path: The destination path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param ignore_existing: If True, all existing files are ignored and not overwritten.
+    :param show_progress: If true, show a progressbar.
+    :param listener: An event-listener that is called with every update of rclone.
+    :param args: List of additional arguments/ flags.
+    :param pbar: Optional progress bar for integration with custom TUI
+    """
+    if args is None:
+        args = []
+
+    if not remote_name.endswith(":"):
+        remote_name += ':'
+
+    _rclone_transfer_operation(
+        [remote_name, file_id],
+        out_path,
+        ignore_existing=ignore_existing,
+        command="rclone backend copyid",
+        command_descr="Copying",
+        show_progress=show_progress,
+        listener=listener,
+        args=args,
+        pbar=pbar,
+        file_title=f"ID:{file_id}",
+    )
+
 
 def copyto(
     in_path: str,
@@ -580,7 +620,7 @@ class RcloneException(ChildProcessError):
 
 @__check_installed
 def _rclone_transfer_operation(
-    in_path: str,
+    in_path: Union[str, list],
     out_path: str,
     command: str,
     command_descr: str,
@@ -589,11 +629,12 @@ def _rclone_transfer_operation(
     listener: Callable[[Dict], None] = None,
     args=None,
     pbar=None,
+    file_title=None,
 ):
     """Executes the rclone transfer operation (e.g. copyto, move, ...) and displays the progress of every individual file.
 
     Args:
-        in_path (str): The source path to use. Specify the remote with 'remote_name:path_on_remote'
+        in_path (str|list): The source path to use. Specify the remote with 'remote_name:path_on_remote'
         out_path (str): The destination path to use. Specify the remote with 'remote_name:path_on_remote'
         command (str): The rclone command to execute (e.g. rclone copyto)
         command_descr (str): The description to this command that should be displayed.
@@ -606,7 +647,13 @@ def _rclone_transfer_operation(
     if args is None:
         args = []
 
-    prog_title = f"{command_descr} [bold magenta]{utils.shorten_filepath(in_path, 20)}[/bold magenta] to [bold magenta]{utils.shorten_filepath(out_path, 20)}"
+    in_path_str = in_path
+    if isinstance(in_path, list):
+        in_path_str = ' '.join(in_path)
+        in_path = '" "'.join(in_path)
+
+    file_title = file_title or utils.shorten_filepath(in_path_str, 20)
+    prog_title = f"{command_descr} [bold magenta]{file_title}[/bold magenta] to [bold magenta]{utils.shorten_filepath(out_path, 20)}"
 
     # add global rclone flags
     if ignore_existing:
@@ -636,6 +683,6 @@ def _rclone_transfer_operation(
     else:
         _, err = process.communicate()
         raise RcloneException(
-            description=f"{command_descr} from {in_path} to {out_path} failed",
+            description=f"{command_descr} from {in_path_str} to {out_path} failed",
             error_msg=err.decode("utf-8"),
         )
