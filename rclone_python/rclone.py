@@ -156,7 +156,7 @@ def copy(
 
 def copyid(
     remote_name: str,
-    file_id: str,
+    file_id: Union[str, list],
     out_path: str,
     ignore_existing=False,
     show_progress=True,
@@ -181,8 +181,12 @@ def copyid(
     if not remote_name.endswith(":"):
         remote_name += ':'
 
+    file_title = file_id
+    if isinstance(file_id, str):
+        file_id = [file_id]
+
     _rclone_transfer_operation(
-        [remote_name, file_id],
+        [remote_name] + file_id,
         out_path,
         ignore_existing=ignore_existing,
         command="rclone backend copyid",
@@ -191,7 +195,7 @@ def copyid(
         listener=listener,
         args=args,
         pbar=pbar,
-        file_title=f"ID:{file_id}",
+        file_title=f"ID:{file_title}",
     )
 
 
@@ -648,12 +652,14 @@ def _rclone_transfer_operation(
         args = []
 
     in_path_str = in_path
+    out_path_str = out_path
     if isinstance(in_path, list):
         in_path_str = ' '.join(in_path)
-        in_path = '" "'.join(in_path)
+        out_path = '" "'.join([j for i in in_path[1:] for j in (i, out_path)])
+        in_path = in_path[0]
 
     file_title = file_title or utils.shorten_filepath(in_path_str, 20)
-    prog_title = f"{command_descr} [bold magenta]{file_title}[/bold magenta] to [bold magenta]{utils.shorten_filepath(out_path, 20)}"
+    prog_title = f"{command_descr} [bold magenta]{file_title}[/bold magenta] to [bold magenta]{utils.shorten_filepath(out_path_str, 20)}"
 
     # add global rclone flags
     if ignore_existing:
@@ -683,6 +689,6 @@ def _rclone_transfer_operation(
     else:
         _, err = process.communicate()
         raise RcloneException(
-            description=f"{command_descr} from {in_path_str} to {out_path} failed",
+            description=f"{command_descr} from {in_path_str} to {out_path_str} failed",
             error_msg=err.decode("utf-8"),
         )
