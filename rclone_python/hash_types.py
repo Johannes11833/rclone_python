@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class HashTypes(Enum):
-    """These are all the hash algorithms support by rclone (generated with v1.67.0).
+    """These are all the hash algorithms support by rclone (generated with v1.68.0).
     A more detailed overview can be found here: https://rclone.org/commands/rclone_hashsum/
     """
 
