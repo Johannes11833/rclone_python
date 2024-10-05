@@ -6,7 +6,7 @@ import subprocess as sp
 from get_version import get_version
 
 
-def update_hashes(output_path: str):
+def update_hashes(output_path: str) -> None:
     """Updates the hash_types.py file to include all supported hash algorithms.
 
     Args:
@@ -17,10 +17,7 @@ def update_hashes(output_path: str):
     rclone_output = sp.check_output("rclone hashsum", shell=True, encoding="utf8")
     lines = rclone_output.splitlines()
 
-    hashes = []
-
-    for l in lines[1:]:
-        hashes.append(l.replace("*", "").strip())
+    hashes = [line.replace("*", "").strip() for line in lines[1:]]
 
     with open(output_path, "w") as o:
         o.write("from enum import Enum")

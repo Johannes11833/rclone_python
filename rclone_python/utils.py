@@ -1,11 +1,11 @@
+from __future__ import annotations
 import re
 import subprocess
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Sequence
 from rich.progress import Progress, TaskID, Task
 from pathlib import Path
 
 from rich.progress import (
-    Progress,
     TextColumn,
     BarColumn,
     TaskProgressColumn,
@@ -18,23 +18,24 @@ from rich.progress import (
 #                               General Functions                              #
 # ---------------------------------------------------------------------------- #
 
+_LISTENER = Optional[Callable[[Dict[str, Any]], None]]
 
-def args2string(args: List[str]) -> str:
+
+def args2string(args: Sequence[str]) -> str:
     # separate flags/ named arguments by a space
     return " ".join(args)
 
 
 def run_cmd(
-    command: str, args: List[str] = (), shell=True, encoding="utf-8"
-) -> subprocess.CompletedProcess:
+    command: str, args: Sequence[str] = (), shell: bool = True, encoding: str = "utf-8"
+) -> subprocess.CompletedProcess[str]:
     # add optional arguments and flags to the command
     args_str = args2string(args)
     command = f"{command} {args_str}"
 
     return subprocess.run(
         command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         shell=shell,
         encoding=encoding,
     )
@@ -63,7 +64,7 @@ def convert2bits(value: float, unit: str) -> float:
     Returns:
         float: The corresponding bit value.
     """
-    exp = {
+    exp: dict[str, int] = {
         "B": 0,
         "KiB": 1,
         "MiB": 2,
@@ -75,7 +76,7 @@ def convert2bits(value: float, unit: str) -> float:
         "YiB": 8,
     }
 
-    return value * 1024 ** exp[unit]
+    return float(value * (1024 ** exp[unit]))
 
 
 # ---------------------------------------------------------------------------- #
@@ -86,31 +87,33 @@ def convert2bits(value: float, unit: str) -> float:
 def rclone_progress(
     command: str,
     pbar_title: str,
-    stderr=subprocess.PIPE,
-    show_progress=True,
-    listener: Callable[[Dict], None] = None,
-    debug=False,
-    pbar: Optional[Progress] = None,
-) -> subprocess.Popen:
+    stderr: int = subprocess.PIPE,
+    show_progress: bool = True,
+    listener: _LISTENER = None,
+    debug: bool = False,
+    pbar: Progress | None = None,
+) -> subprocess.Popen[bytes]:
     buffer = ""
     total_progress_id = None
-    subprocesses = {}
+    subprocesses: dict[str, TaskID] = {}
 
     if show_progress:
         if pbar is None:
             pbar = create_progress_bar()
         pbar.start()
         total_progress_id = pbar.add_task(pbar_title, total=None)
-
+    assert pbar is not None
     process = subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=stderr, shell=True
     )
+    assert process.stdout is not None
     for line in iter(process.stdout.readline, b""):
         var = line.decode()
 
         valid, update_dict = extract_rclone_progress(buffer)
 
         if valid:
+            assert update_dict is not None
             if show_progress:
                 update_tasks(pbar, total_progress_id, update_dict, subprocesses)
 
@@ -129,7 +132,7 @@ def rclone_progress(
 
     if show_progress:
         complete_task(total_progress_id, pbar)
-        for _, task_id in subprocesses.items():
+        for task_id in subprocesses.values():
             # hide all subprocesses
             pbar.update(task_id=task_id, visible=False)
         pbar.stop()
@@ -137,7 +140,7 @@ def rclone_progress(
     return process
 
 
-def extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], None]]:
+def extract_rclone_progress(buffer: str) -> tuple[bool, dict[str, Any] | None]:
     # matcher that checks if the progress update block is completely buffered yet (defines start and stop)
     # it gets the sent bits, total bits, progress, transfer-speed and eta
     reg_transferred = re.findall(
@@ -164,7 +167,7 @@ def extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], No
                 )
             )
 
-        out = {"prog_transferring": prog_transferring}
+        out: dict[str, Any] = {"prog_transferring": prog_transferring}
         sent_bits, total_bits, progress, transfer_speed_str, eta = reg_transferred[0]
         out["progress"] = float(progress.strip())
         out["total_bits"] = float(re.findall(r"\d+.\d+", total_bits)[0])
@@ -213,7 +216,7 @@ def get_task(id: TaskID, progress: Progress) -> Task:
     return None
 
 
-def complete_task(id: TaskID, progress: Progress):
+def complete_task(id: TaskID, progress: Progress) -> None:
     """Manually sets the progress of the task with the specified TaskID to 100%.
 
     Args:
@@ -234,9 +237,9 @@ def complete_task(id: TaskID, progress: Progress):
 def update_tasks(
     pbar: Progress,
     total_progress: TaskID,
-    update_dict: Dict[str, Any],
-    subprocesses: Dict[str, TaskID],
-):
+    update_dict: dict[str, Any],
+    subprocesses: dict[str, TaskID],
+) -> None:
     """Updates the total progress as well as all subprocesses (the individual files that are currently uploading).
 
     Args:
