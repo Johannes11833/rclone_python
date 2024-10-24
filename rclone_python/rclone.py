@@ -519,7 +519,7 @@ def hash(
 
         for l in lines:
             if len(l) > 0:
-                value, key = l.split()
+                value, key = l.split("  ", maxsplit=1)
 
                 if checkfile is None:
                     hashsums[key] = value
