@@ -3,7 +3,7 @@ name: Run Unit Test via Pytest
 on: [push]
 env:
   rclone_config: ${{ secrets.RCLONE_CONFIG }}
-  python_version: 3.10
+  python_version: "3.10"
   
 jobs:  
   build:  
