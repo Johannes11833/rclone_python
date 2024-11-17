@@ -26,14 +26,12 @@ def lorem_ipsum_remote_file(default_remote):
 
 
 def test_cat(default_remote, lorem_ipsum_remote_file):
-
     output: str = rclone.cat(lorem_ipsum_remote_file)
 
     assert output == default_remote.local_test_txt_file.read_text()
 
 
 def test_cat_count(default_remote, lorem_ipsum_remote_file):
-
     count = 10
 
     output: str = rclone.cat(lorem_ipsum_remote_file, count=count)
