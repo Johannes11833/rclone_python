@@ -22,10 +22,8 @@ jobs:
       - name: Setup rclone config file
         run: |
             mkdir -p ~/.config/rclone
-            rclone config file
             echo "$rclone_config" > ~/.config/rclone/rclone.conf
             rclone listremotes
-            rclone config file
       - name: Install dependencies  
         run: |  
           python -m pip install --upgrade pip
@@ -34,7 +32,7 @@ jobs:
       - name: Run test suite  
         run: |  
           pytest -v
-      - name: Update GH rclone file
+      - name: Update rclone config file secret
         run:  cat ~/.config/rclone/rclone.conf | gh secret set RCLONE_CONFIG
         env:
             rclone_config_secret_name: RCLONE_CONFIG
