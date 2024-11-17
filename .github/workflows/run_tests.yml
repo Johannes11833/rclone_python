@@ -23,7 +23,7 @@ jobs:
         run: |
             mkdir -p ~/.config/rclone
             rclone config file
-            echo $rclone_config | base64 -d > ~/.config/rclone/rclone.conf
+            echo "$rclone_config" | base64 -d > ~/.config/rclone/rclone.conf
             rclone listremotes
             rclone config file
       - name: Install dependencies  
