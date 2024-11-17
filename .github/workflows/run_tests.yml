@@ -20,6 +20,7 @@ jobs:
       - name: Setup rclone config file
         run: |
             mkdir -p ~/.config/rclone
+            rclone config file
             echo $CONFIG > ~/.config/rclone/rclone.conf
             rclone listremotes
             rclone config file
