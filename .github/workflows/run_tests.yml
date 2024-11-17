@@ -21,6 +21,7 @@ jobs:
         run: |
             mkdir -p ~/.config/rclone
             echo $RCLONE_CONFIG > ~/.config/rclone/rclone.conf
+            rclone listremotes
         shell: bash
         env:
             RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
