@@ -1,6 +1,8 @@
 name: Run Unit Test via Pytest  
   
 on: [push]
+env:
+  rclone_config: ${{ secrets.RCLONE_CONFIG }}
   
 jobs:  
   build:  
@@ -21,12 +23,9 @@ jobs:
         run: |
             mkdir -p ~/.config/rclone
             rclone config file
-            echo $CONFIG > ~/.config/rclone/rclone.conf
+            echo $rclone_config > ~/.config/rclone/rclone.conf
             rclone listremotes
             rclone config file
-        shell: bash
-        env:
-            CONFIG: ${{secrets.RCLONE_CONFIG}}
       - name: Install dependencies  
         run: |  
           python -m pip install --upgrade pip
