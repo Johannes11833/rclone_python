@@ -45,7 +45,7 @@ jobs:
           git diff-index --quiet HEAD || (git commit -a -m "Updated rclone remote & hash types" --allow-empty)
 
       - name: push changes
-        uses: ad-m/github-push-action@v0.6.0
+        uses: ad-m/github-push-action@v0.8.0
         with:
           branch: master
-          
+          github_token: ${{ secrets.GITHUB_TOKEN }}
