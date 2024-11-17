@@ -18,7 +18,9 @@ jobs:
       - name: install the rclone software
         run: sudo -v ; curl https://rclone.org/install.sh | sudo bash
       - name: Setup rclone
-        run: echo ${{ secrets.RCLONE_CONFIG }} > ~/.config/rclone/rclone.conf
+        run: |
+            mkdir -p ~/.config/rclone
+            echo ${{ secrets.RCLONE_CONFIG }} > ~/.config/rclone/rclone.conf
       - name: Install dependencies  
         run: |  
           python -m pip install --upgrade pip
