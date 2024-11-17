@@ -120,6 +120,45 @@ def create_remote(
         )
 
 
+def cat(
+    path: str,
+    count: Optional[int] = None,
+    head: Optional[int] = None,
+    offset: Optional[int] = None,
+    tail: Optional[int] = None,
+    args=None,
+):
+    """
+    Outputs a single file.
+    :param path: The path to the file to run the cat command on.
+    :param count: Only print N characters.
+    :param head: Only print the first N characters.
+    :param offset: Start printing at offset N (or from end when offset is negative)
+    :param tail: Only print the last N characters.
+    :param args: List of additional arguments/ flags.
+    """
+    if args is None:
+        args = []
+
+    if count is not None:
+        args.append(f"--count {count}")
+    if head is not None:
+        args.append(f"--head {head}")
+    if offset is not None:
+        args.append(f"--offset {offset}")
+    if tail is not None:
+        args.append(f"--tail {tail}")
+
+    process = utils.run_cmd(f"rclone cat {path}", args=args)
+
+    if process.returncode == 0:
+        return process.stdout
+    else:
+        raise Exception(
+            f"An error occurred while executing the cat command: {process.stderr}"
+        )
+
+
 def copy(
     in_path: str,
     out_path: str,
