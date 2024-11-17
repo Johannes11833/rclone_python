@@ -1,12 +1,14 @@
-name: update rclone remote types
+name: update rclone remote and hash types
 
 on:
   schedule:
     - cron: '0 0 * * 1' # At 00:00 on Monday
 
 jobs:
-  build:
+  update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write           # 'write' access to repository contents
     steps:
 
       - name: checkout repo content
@@ -43,8 +45,7 @@ jobs:
           git diff-index --quiet HEAD || (git commit -a -m "Updated rclone remote & hash types" --allow-empty)
 
       - name: push changes
-        uses: ad-m/github-push-action@v0.6.0
+        uses: ad-m/github-push-action@v0.8.0
         with:
-          github_token: ${{ secrets.GH_ACCESS_TOKEN }}
           branch: master
-          
+          github_token: ${{ secrets.GITHUB_TOKEN }}
