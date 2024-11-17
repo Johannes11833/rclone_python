@@ -20,11 +20,11 @@ jobs:
       - name: Setup rclone config file
         run: |
             mkdir -p ~/.config/rclone
-            echo $RCLONE_CONFIG > ~/.config/rclone/rclone.conf
+            echo $CONFIG > ~/.config/rclone/rclone.conf
             rclone listremotes
         shell: bash
         env:
-            RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
+            CONFIG: ${{secrets.RCLONE_CONFIG}}
       - name: Install dependencies  
         run: |  
           python -m pip install --upgrade pip
