@@ -3,7 +3,6 @@ import pytest
 
 
 class TestRemote:
-
     def __init__(
         self,
         remote_name,
