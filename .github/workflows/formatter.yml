@@ -19,9 +19,8 @@ jobs:
           black_args: "."
       - name: Create Pull Request
         if: steps.action_black.outputs.is_formatted == 'true'
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
           title: "Format Python code with psf/black push"
           commit-message: ":art: Format Python code with psf/black"
           body: |
