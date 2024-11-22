@@ -21,7 +21,10 @@ from rich.progress import (
 
 def args2string(args: List[str]) -> str:
     # separate flags/ named arguments by a space
-    return " ".join(args)
+    if args:
+        return " " + " ".join(args)
+
+    return ""
 
 
 def run_cmd(
