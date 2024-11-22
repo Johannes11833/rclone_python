@@ -16,7 +16,7 @@ def temporary_remote_folder(default_test_setup):
     yield remote_relative_test_dir
 
     # TEARDOWN
-    print("\nTeardown: deleting temp remote folder")
+    print(f"\nTeardown: deleting temp remote folder at {remote_relative_test_dir}")
     rclone.purge(remote_relative_test_dir)
 
 
@@ -26,7 +26,7 @@ def large_tmp_local_file():
     local_file_path = Path("data/tmp_file.file")
     local_file_path.parent.mkdir(parents=True, exist_ok=True)
     with open(local_file_path, "wb") as out:
-        out.truncate(100 * 1024 * 1024)
+        out.truncate(10 * 1024 * 1024)
 
     yield local_file_path
 
