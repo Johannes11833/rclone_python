@@ -128,8 +128,7 @@ def extract_rclone_progress(line: str) -> Tuple[bool, Union[Dict[str, Any], None
     except ValueError:
         stats = None
 
-    # wait until we know the total file size --> bytes > 0
-    if stats is not None and stats.get("bytes", 0) > 0:
+    if stats is not None:
         # get the progress of the individual files
         tasks = []
         for t in stats.get("transferring", []):
@@ -147,9 +146,7 @@ def extract_rclone_progress(line: str) -> Tuple[bool, Union[Dict[str, Any], None
             "total": stats["totalBytes"],
             "sent": stats["bytes"],
             "progress": (
-                stats["bytes"] / stats["totalBytes"]
-                if stats["bytes"] is not None
-                else 0
+                stats["bytes"] / stats["totalBytes"] if stats["totalBytes"] != 0 else 0
             ),
             "transfer_speed": stats["speed"],
             "rclone_output": stats,
