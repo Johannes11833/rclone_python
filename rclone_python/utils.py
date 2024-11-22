@@ -112,6 +112,17 @@ def rclone_progress(
 
 
 def extract_rclone_progress(line: str) -> Tuple[bool, Union[Dict[str, Any], None]]:
+    """Extracts and returns the progress updates from the rclone transfer operation.
+    The returned Dictionary includes the original rclone stats output inside of "rclone_output".
+    All file sizes and speeds are give in bytes.
+
+    Args:
+        line (str): One output line of the rclone transfer operation with the --use-json-log flag enabled.
+
+    Returns:
+        Tuple[bool, Union[Dict[str, Any], None]]: The retrieved update Dictionary.
+    """
+
     try:
         stats: Dict = json.loads(line).get("stats", None)
     except ValueError:
@@ -246,8 +257,8 @@ def update_tasks(
 
     # make all processes invisible that are no longer provided by rclone (bc. their upload completed)
     missing = list(sorted(subprocesses.keys() - task_names))
-    for missing_sp_id in missing:
-        pbar.update(subprocesses[missing_sp_id], visible=False)
+    for missing_task_id in missing:
+        pbar.update(subprocesses[missing_task_id], visible=False)
 
     # change symbol for the last visible process
     for task in reversed(pbar.tasks):
