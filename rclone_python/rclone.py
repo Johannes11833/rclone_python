@@ -120,6 +120,28 @@ def create_remote(
         )
 
 
+def mkdir(
+    path: str,
+    args=None,
+):
+    """
+    Make the path if it doesn't already exist.
+    :param path: The path to the file to run the mkdir command on.
+    :param args: List of additional arguments/ flags.
+    """
+    if args is None:
+        args = []
+
+    process = utils.run_cmd(f"rclone mkdir {path}", args=args)
+
+    if process.returncode == 0:
+        return process.stdout
+    else:
+        raise Exception(
+            f"An error occurred while executing the cat command: {process.stderr}"
+        )
+
+
 def cat(
     path: str,
     count: Optional[int] = None,
