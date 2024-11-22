@@ -2,7 +2,7 @@ from pathlib import Path
 import pytest
 
 
-class TestRemote:
+class TestSetup:
     def __init__(
         self,
         remote_name,
@@ -15,5 +15,9 @@ class TestRemote:
 
 
 @pytest.fixture(scope="session")
-def default_remote():
-    return TestRemote("box", "box:test_dir", "tests/data/lorem.txt")
+def default_test_setup():
+    return TestSetup(
+        remote_name="box",
+        remote_test_dir="box:test_dir",
+        local_test_txt_file="tests/data/lorem.txt",
+    )
