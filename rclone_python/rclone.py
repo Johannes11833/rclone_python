@@ -650,12 +650,13 @@ def _rclone_transfer_operation(
     # add global rclone flags
     if ignore_existing:
         command += " --ignore-existing"
-    command += " --progress"
 
     # in path
     command += f' "{in_path}"'
     # out path
     command += f' "{out_path}"'
+
+    command += " --stats 0.1s --stats-unit bytes --use-json-log -v"
 
     # optional named arguments/flags
     command += utils.args2string(args)
