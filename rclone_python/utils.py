@@ -43,7 +43,9 @@ def run_cmd(
     )
 
 
-def shorten_filepath(in_path: str, max_length: int) -> str:
+def shorten_filepath(in_path: Union[str, Path], max_length: int) -> str:
+    in_path = str(in_path)
+
     if len(in_path) > max_length:
         if ":" in in_path:
             in_path = (
@@ -128,16 +130,20 @@ def extract_rclone_progress(line: str) -> Tuple[bool, Union[Dict[str, Any], None
     except ValueError:
         stats = None
 
-    if stats is not None:
+    if stats is not None and stats.get("bytes", 0) > 0:
         # get the progress of the individual files
         tasks = []
         for t in stats.get("transferring", []):
+            total = t.get("size", 0)
+            sent = t.get("bytes", 0)
             tasks.append(
                 {
-                    "name": t["name"],
-                    "total": t["size"],
-                    "sent": t["bytes"],
-                    "progress": t["percentage"],
+                    # sometime not all the task information is available right from the start
+                    "name": t.get("name", "N/A"),
+                    "total": total,
+                    "sent": sent,
+                    "progress": sent / total if total != 0 else 0,
+                    "transfer_speed": t.get("speed", 0),
                 }
             )
 
@@ -246,7 +252,7 @@ def update_tasks(
             task_id,
             # set the description every time to reset the '├'
             description=f" ├─{task_name}",
-            completed=task_size * task_progress / 100.0,
+            completed=task_size * task_progress,
             total=task_size,
             # hide subprocesses if we only upload a single file
             visible=len(subprocesses) > 1,
