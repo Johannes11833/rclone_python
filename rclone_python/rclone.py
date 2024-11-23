@@ -149,7 +149,7 @@ def cat(
     offset: Optional[int] = None,
     tail: Optional[int] = None,
     args=None,
-):
+) -> str:
     """
     Outputs a single file.
     :param path: The path to the file to run the cat command on.

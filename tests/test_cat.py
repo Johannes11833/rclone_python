@@ -25,7 +25,7 @@ def lorem_ipsum_remote_file(default_test_setup):
 
 
 def test_cat(default_test_setup, lorem_ipsum_remote_file):
-    output: str = rclone.cat(lorem_ipsum_remote_file)
+    output = rclone.cat(lorem_ipsum_remote_file)
 
     assert output == default_test_setup.local_test_txt_file.read_text()
 
@@ -33,7 +33,7 @@ def test_cat(default_test_setup, lorem_ipsum_remote_file):
 def test_cat_count(default_test_setup, lorem_ipsum_remote_file):
     count = 10
 
-    output: str = rclone.cat(lorem_ipsum_remote_file, count=count)
+    output = rclone.cat(lorem_ipsum_remote_file, count=count)
 
     assert output == default_test_setup.local_test_txt_file.read_text()[:count]
 
@@ -41,7 +41,7 @@ def test_cat_count(default_test_setup, lorem_ipsum_remote_file):
 def test_cat_head(default_test_setup, lorem_ipsum_remote_file):
     head = 10
 
-    output: str = rclone.cat(lorem_ipsum_remote_file, head=head)
+    output = rclone.cat(lorem_ipsum_remote_file, head=head)
 
     assert output == default_test_setup.local_test_txt_file.read_text()[:head]
 
@@ -51,7 +51,7 @@ def test_cat_offset(default_test_setup, lorem_ipsum_remote_file):
     count = 15
 
     # offset and count
-    output: str = rclone.cat(lorem_ipsum_remote_file, offset=offset, count=count)
+    output = rclone.cat(lorem_ipsum_remote_file, offset=offset, count=count)
     assert (
         output
         == default_test_setup.local_test_txt_file.read_text()[offset : offset + count]
