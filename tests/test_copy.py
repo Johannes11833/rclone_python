@@ -50,13 +50,13 @@ class Recorder:
 
 
 def create_tmp_local_file(
-    path: Union[str, Path], size_mb: int, file_name: str = "tmp_file.file"
+    path: Union[str, Path], size_mb: float, file_name: str = "tmp_file.file"
 ) -> Path:
     # Create large local file
     local_file_path = Path(path) / file_name
     local_file_path.parent.mkdir(parents=True, exist_ok=True)
     with open(local_file_path, "wb") as out:
-        out.truncate(size_mb * 1024 * 1024)
+        out.truncate(int(size_mb * 1024 * 1024))
 
     return local_file_path
 
@@ -79,17 +79,31 @@ def test_copy(default_test_setup, tmp_remote_folder, tmp_local_folder):
     assert (download_path / tmp_local_file.name).is_file()
 
 
-@pytest.mark.parametrize("show_progress", [True, False])
-def test_copy_progress_listener(tmp_remote_folder, tmp_local_folder, show_progress):
+@pytest.mark.parametrize(
+    "method,show_progress",
+    [
+        (rclone.copy, True),
+        (rclone.copy, False),
+        (rclone.copyto, True),
+        (rclone.copyto, False),
+        (rclone.sync, True),
+        (rclone.sync, False),
+        (rclone.move, True),
+        (rclone.move, False),
+        (rclone.moveto, True),
+        (rclone.moveto, False),
+    ],
+)
+def test_progress_listener(tmp_remote_folder, tmp_local_folder, show_progress, method):
     # check if the listener is successfully provided with updates
     # file size should be large enough to receive progress updates
-    tmp_file_1 = create_tmp_local_file(tmp_local_folder, 10, file_name="file_1")
-    tmp_file_2 = create_tmp_local_file(tmp_local_folder, 15, file_name="file_2")
+    tmp_file_1 = create_tmp_local_file(tmp_local_folder, 10.25, file_name="file_1")
+    tmp_file_2 = create_tmp_local_file(tmp_local_folder, 15.776, file_name="file_2")
 
     recorder = Recorder()
 
     # upload: copy local to remote and record all updates
-    rclone.copy(
+    method(
         tmp_local_folder,
         tmp_remote_folder,
         listener=recorder.update,

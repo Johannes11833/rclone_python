@@ -8,7 +8,7 @@ class TestSetup:
         remote_name: str,
         remote_test_dir_rel: str,
         local_test_txt_file: str,
-        tmp_local_file_size_mb: int = 10,
+        tmp_local_file_size_mb: int = 1.2,
     ):
         self.remote_name: str = remote_name
         self.remote_test_data_dir: str = f"{remote_name}:{remote_test_dir_rel}"
