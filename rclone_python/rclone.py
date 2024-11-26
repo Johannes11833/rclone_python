@@ -138,7 +138,7 @@ def mkdir(
         return process.stdout
     else:
         raise Exception(
-            f"An error occurred while executing the cat command: {process.stderr}"
+            f"An error occurred while executing the mkdir command: {process.stderr}"
         )
 
 
