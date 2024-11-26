@@ -66,7 +66,6 @@ def shorten_filepath(in_path: Union[str, Path], max_length: int) -> str:
 def rclone_progress(
     command: str,
     pbar_title: str,
-    stderr=subprocess.PIPE,
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     debug=False,
@@ -82,7 +81,7 @@ def rclone_progress(
         total_progress_id = pbar.add_task(pbar_title, total=None)
 
     process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, stderr=stderr, shell=True
+        args=command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
 
     # rclone prints stats to stderr. each line is one update

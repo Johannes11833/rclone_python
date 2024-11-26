@@ -1,14 +1,17 @@
-import os
 from pathlib import Path
+import subprocess
 import tempfile
-from typing import Dict, List, Union
+from typing import Callable, List, Union
 import uuid
 import pytest
 from rclone_python import rclone
+from unittest.mock import patch
 
 
 @pytest.fixture(scope="function")
 def tmp_remote_folder(default_test_setup):
+    # automatically removes this folder after a test function compted.
+    # only the teardown is done, the folder is not created and the test should upload to that path.
     remote_relative_test_dir = (
         f"{default_test_setup.remote_test_data_dir}/{uuid.uuid4()}"
     )
@@ -31,6 +34,7 @@ def tmp_local_folder():
 
 
 class Recorder:
+    # Records all updates provided to the update function.
     def __init__(self):
         self.history = []
 
@@ -38,9 +42,11 @@ class Recorder:
         self.history.append(update)
 
     def get_summary_stats(self, stat_name: str) -> List[any]:
+        # returns the stats related to the overall transfer task.
         return [update[stat_name] for update in self.history]
 
-    def get_task_stats(self, stat_name: str, task_name: str) -> List[any]:
+    def get_subtask_stats(self, stat_name: str, task_name: str) -> List[any]:
+        # returns stats related to a specific subtask.
         return [
             task_update[stat_name]
             for update in self.history
@@ -52,7 +58,7 @@ class Recorder:
 def create_tmp_local_file(
     path: Union[str, Path], size_mb: float, file_name: str = "tmp_file.file"
 ) -> Path:
-    # Create large local file
+    # Create local file of specific size.
     local_file_path = Path(path) / file_name
     local_file_path.parent.mkdir(parents=True, exist_ok=True)
     with open(local_file_path, "wb") as out:
@@ -61,22 +67,93 @@ def create_tmp_local_file(
     return local_file_path
 
 
-def test_copy(default_test_setup, tmp_remote_folder, tmp_local_folder):
+@pytest.mark.parametrize(
+    "wrapper_command,rclone_command",
+    [
+        (rclone.copy, "rclone copy"),
+        (rclone.copyto, "rclone copyto"),
+        (rclone.sync, "rclone sync"),
+        (rclone.move, "rclone move"),
+        (rclone.moveto, "rclone moveto"),
+    ],
+)
+def test_rclone_command_called(wrapper_command: Callable, rclone_command: str):
+    # this test checks that the correct underlying rclone command is called
+    # when calling one of the 5 transfer-operation commands of the wrapper.
+
+    with patch.object(
+        # mock Popen inside the utils module to access the keyword arguments.
+        # the rclone command is not executed.
+        rclone.utils.subprocess,
+        "Popen",
+        return_value=subprocess.Popen(
+            "rclone help", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        ),
+    ) as mock:
+        wrapper_command("nothing/not_a.file", "fake_remote:unicorn/folder")
+
+    assert mock.call_count == 1
+    _, kwargs = mock.call_args_list[0]
+    assert kwargs["args"].startswith(rclone_command)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        rclone.copy,
+        rclone.copyto,
+    ],
+)
+def test_copy(default_test_setup, tmp_remote_folder, tmp_local_folder, command):
     tmp_local_file = create_tmp_local_file(
         tmp_local_folder, default_test_setup.tmp_local_file_size_mb
     )
 
     # upload: copy local to remote
-    rclone.copy(tmp_local_folder, tmp_remote_folder)
+    command(tmp_local_folder, tmp_remote_folder)
     assert rclone.ls(tmp_remote_folder)[0]["Path"] == tmp_local_file.name
 
     # download: copy remote to local
     download_path = tmp_local_folder / "download"
-    rclone.copy(
+    command(
         tmp_remote_folder,
         download_path,
     )
     assert (download_path / tmp_local_file.name).is_file()
+
+
+def test_sync(default_test_setup, tmp_remote_folder, tmp_local_folder):
+    tmp_local_file_1 = create_tmp_local_file(
+        tmp_local_folder, default_test_setup.tmp_local_file_size_mb, file_name="file_1"
+    )
+    tmp_local_file_2 = create_tmp_local_file(
+        tmp_local_folder, default_test_setup.tmp_local_file_size_mb, file_name="file_2"
+    )
+
+    rclone.copy(default_test_setup.local_test_txt_file, tmp_remote_folder)
+
+    # sync local to remote --> this should remove the just uploaded test_txt_file
+    rclone.sync(tmp_local_folder, tmp_remote_folder)
+    paths = [file["Path"] for file in rclone.ls(tmp_remote_folder)]
+    assert len(paths) == 2
+    assert tmp_local_file_1.name in paths and tmp_local_file_2.name
+
+
+def test_move(default_test_setup, tmp_remote_folder, tmp_local_folder):
+    tmp_local_file = create_tmp_local_file(
+        tmp_local_folder, default_test_setup.tmp_local_file_size_mb
+    )
+
+    # upload: move to remote
+    assert tmp_local_file.is_file()
+    rclone.move(tmp_local_file, tmp_remote_folder)
+    assert rclone.ls(tmp_remote_folder)[0]["Path"] == tmp_local_file.name
+    assert not tmp_local_file.is_file()
+
+    # download: move to local
+    rclone.move(tmp_remote_folder, tmp_local_file.parent)
+    assert len(rclone.ls(tmp_remote_folder)) == 0
+    assert tmp_local_file.is_file()
 
 
 @pytest.mark.parametrize(
@@ -128,30 +205,13 @@ def test_progress_listener(tmp_remote_folder, tmp_local_folder, show_progress, m
     assert recorder.get_summary_stats("progress")[-1] == pytest.approx(1)
 
     # check file_1 progress
-    file_1_progress = recorder.get_task_stats("progress", tmp_file_1.name)
+    file_1_progress = recorder.get_subtask_stats("progress", tmp_file_1.name)
     assert len(file_1_progress) > 0
     assert file_1_progress[0] == pytest.approx(0, abs=0.1)
     assert file_1_progress[-1] == pytest.approx(1)
 
     # check file_2 progress
-    file_2_progress = recorder.get_task_stats("progress", tmp_file_2.name)
+    file_2_progress = recorder.get_subtask_stats("progress", tmp_file_2.name)
     assert len(file_2_progress) > 0
     assert file_2_progress[0] == pytest.approx(0, abs=0.1)
     assert file_2_progress[-1] == pytest.approx(1)
-
-
-def test_move(default_test_setup, tmp_remote_folder, tmp_local_folder):
-    tmp_local_file = create_tmp_local_file(
-        tmp_local_folder, default_test_setup.tmp_local_file_size_mb
-    )
-
-    # upload: move to remote
-    assert tmp_local_file.is_file()
-    rclone.move(tmp_local_file, tmp_remote_folder)
-    assert rclone.ls(tmp_remote_folder)[0]["Path"] == tmp_local_file.name
-    assert not tmp_local_file.is_file()
-
-    # download: move to local
-    rclone.move(tmp_remote_folder, tmp_local_file.parent)
-    assert len(rclone.ls(tmp_remote_folder)) == 0
-    assert tmp_local_file.is_file()
