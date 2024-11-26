@@ -43,7 +43,9 @@ def run_cmd(
     )
 
 
-def shorten_filepath(in_path: str, max_length: int) -> str:
+def shorten_filepath(in_path: Union[str, Path], max_length: int) -> str:
+    in_path = str(in_path)
+
     if len(in_path) > max_length:
         if ":" in in_path:
             in_path = (
@@ -64,13 +66,11 @@ def shorten_filepath(in_path: str, max_length: int) -> str:
 def rclone_progress(
     command: str,
     pbar_title: str,
-    stderr=subprocess.PIPE,
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     debug=False,
     pbar: Optional[Progress] = None,
 ) -> subprocess.Popen:
-    buffer = ""
     total_progress_id = None
     subprocesses = {}
 
@@ -81,7 +81,7 @@ def rclone_progress(
         total_progress_id = pbar.add_task(pbar_title, total=None)
 
     process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, stderr=stderr, shell=True
+        args=command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
 
     # rclone prints stats to stderr. each line is one update
@@ -99,7 +99,7 @@ def rclone_progress(
                 listener(update_dict)
 
             if debug:
-                pbar.log(buffer)
+                pbar.log(line)
 
     if show_progress:
         complete_task(total_progress_id, pbar)
@@ -128,17 +128,20 @@ def extract_rclone_progress(line: str) -> Tuple[bool, Union[Dict[str, Any], None
     except ValueError:
         stats = None
 
-    if stats is not None and stats.get("bytes", 0) > 0:
+    if stats is not None and stats.get("totalBytes", 0) > 0:
         # get the progress of the individual files
         tasks = []
         for t in stats.get("transferring", []):
+            total = t.get("size", 0)
+            sent = t.get("bytes", 0)
             tasks.append(
                 {
                     # sometime not all the task information is available right from the start
                     "name": t.get("name", "N/A"),
-                    "total": t.get("size", 0),
-                    "sent": t.get("bytes", 0),
-                    "progress": t.get("percentage", 0),
+                    "total": total,
+                    "sent": sent,
+                    "progress": sent / total if total != 0 else 0,
+                    "transfer_speed": t.get("speed", 0),
                 }
             )
 
@@ -233,7 +236,7 @@ def update_tasks(
 
         task_name = task["name"]
         task_size = task["total"]
-        task_progress = task["progress"]
+        task_sent = task["sent"]
 
         task_names.add(task_name)
 
@@ -247,7 +250,7 @@ def update_tasks(
             task_id,
             # set the description every time to reset the '├'
             description=f" ├─{task_name}",
-            completed=task_size * task_progress / 100.0,
+            completed=task_sent,
             total=task_size,
             # hide subprocesses if we only upload a single file
             visible=len(subprocesses) > 1,
