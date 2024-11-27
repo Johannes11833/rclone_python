@@ -8,6 +8,9 @@ from typing import Optional, Union, List, Dict, Callable
 from rclone_python import utils
 from rclone_python.hash_types import HashTypes
 from rclone_python.remote_types import RemoteTypes
+from rich.traceback import install
+
+install(show_locals=True)
 
 # debug flag enables/disables raw output of rclone progresses in the terminal
 DEBUG = False
@@ -49,8 +52,8 @@ def about(remote_name: str):
     if process.returncode == 0:
         return json.loads(process.stdout)
     else:
-        raise Exception(
-            f"An error occurred while executing the about command: {process.stderr}"
+        raise RcloneException(
+            f'about command failed on remote "{remote_name}"', process.stderr
         )
 
 
@@ -113,13 +116,14 @@ def create_remote(
         process = utils.run_cmd(command)
 
         if process.returncode != 0:
-            raise Exception(process.stderr)
+            raise RcloneException("config create command failed", process.stderr)
     else:
         raise Exception(
             f"A rclone remote with the name '{remote_name}' already exists!"
         )
 
 
+@__check_installed
 def mkdir(
     path: str,
     args=None,
@@ -134,14 +138,11 @@ def mkdir(
 
     process = utils.run_cmd(f"rclone mkdir {path}", args=args)
 
-    if process.returncode == 0:
-        return process.stdout
-    else:
-        raise Exception(
-            f"An error occurred while executing the mkdir command: {process.stderr}"
-        )
+    if process.returncode != 0:
+        raise RcloneException(f"mkdir command failed", process.stderr)
 
 
+@__check_installed
 def cat(
     path: str,
     count: Optional[int] = None,
@@ -176,9 +177,7 @@ def cat(
     if process.returncode == 0:
         return process.stdout
     else:
-        raise Exception(
-            f"An error occurred while executing the cat command: {process.stderr}"
-        )
+        raise RcloneException(f"cat command failed", process.stderr)
 
 
 def copy(
@@ -381,9 +380,7 @@ def purge(path: str, args=None):
     if process.returncode == 0:
         logging.info(f"Successfully purged {path}")
     else:
-        raise Exception(
-            f'Purging path "{path}" failed with error message:\n{process.stderr}'
-        )
+        raise RcloneException(f'purge command failed on path "{path}"', process.stderr)
 
 
 @__check_installed
@@ -403,9 +400,7 @@ def delete(path: str, args=None):
     if process.returncode == 0:
         logging.info(f"Successfully deleted {path}")
     else:
-        raise Exception(
-            f'Deleting path "{path}" failed with error message:\n{process.stderr}'
-        )
+        raise RcloneException(f'delete command failed on path "{path}"', process.stderr)
 
 
 @__check_installed
@@ -436,10 +431,10 @@ def link(
 
     process = utils.run_cmd(command, args)
 
-    if process.returncode != 0:
-        raise Exception(process.stderr)
-    else:
+    if process.returncode == 0:
         return process.stdout
+    else:
+        raise RcloneException(f'link command failed on path "{path}"', process.stderr)
 
 
 @__check_installed
@@ -478,9 +473,35 @@ def ls(
     if process.returncode == 0:
         return json.loads(process.stdout)
     else:
-        raise Exception(f"ls operation on {path} failed with:\n{process.stderr}")
+        raise RcloneException(f'ls command failed on path "{path}"', process.stderr)
 
 
+@__check_installed
+def size(
+    path: str,
+    args: List[str] = None,
+) -> Dict:
+    """Returns the total size and number of objects in the path.
+
+    Args:
+        path (str): The path to calculate the total size on.
+        args (List[str], optional): Optional additional list of flags.
+
+    Returns:
+        Dict: Dictionary containing the file count, total file size in bytes and number of empty items.
+    """
+    if args is None:
+        args = []
+
+    process = utils.run_cmd(f'rclone size "{path}" --json', args)
+
+    if process.returncode == 0:
+        return json.loads(process.stdout)
+    else:
+        raise RcloneException(f'size command failed on path "{path}"', process.stderr)
+
+
+@__check_installed
 def tree(
     path: str,
     args: List[str] = None,
@@ -500,7 +521,7 @@ def tree(
     process = utils.run_cmd(f'rclone tree "{path}"', args)
 
     if process.returncode != 0:
-        raise Exception(process.stderr)
+        raise RcloneException(f'tree command failed on path "{path}"', process.stderr)
     else:
         return process.stdout
 
@@ -525,7 +546,7 @@ def hash(
         args (List[str], optional): Optional additional list of flags.
 
     Raises:
-        Exception: Raised when the rclone command does not succeed.
+        RcloneException: Raised when the rclone command does not succeed.
 
     Returns:
         Union[None, str, bool, Dict[str, str], Dict[str, bool]]: 3 different modes apply based on the inputs:
@@ -570,8 +591,9 @@ def hash(
                     break
 
     if exception:
-        raise Exception(
-            f"hashsum operation on {path} with hash='{hash}' failed with:\n{process.stderr}"
+        raise RcloneException(
+            f'hashsum command failed on path "{path}" with hash="{hash}"',
+            process.stderr,
         )
 
     if output_file is None:
@@ -618,7 +640,9 @@ def version(
     process = utils.run_cmd("rclone version", args)
 
     if process.returncode != 0:
-        raise Exception(process.stderr)
+        raise RcloneException(
+            f'version command failed with check="{check}"', process.stderr
+        )
 
     stdout = process.stdout
 
@@ -626,9 +650,17 @@ def version(
         return stdout.split("\n")[0].replace("rclone ", "")
     else:
         yours = re.findall(r"yours:\s+([\d.]+)", stdout)[0]
-        latest = re.findall(r"latest:\s+([\d.]+)", stdout)[0]
+        latest = re.findall(r"latest:\s+([\d.]+)", stdout)
+        latest = latest[0] if latest else None
         # beta version might include dashes and word characters e.g. '1.64.0-beta.7161.9169b2b5a'
-        beta = re.findall(r"beta:\s+([.\w-]+)", stdout)[0]
+        beta = re.findall(r"beta:\s+([.\w-]+)", stdout)
+        beta = beta[0] if beta else None
+
+        if not latest or not beta:
+            logging.warning(
+                f"Failed to get latest rclone versions. The following error was output by rclone:\n{process.stderr}"
+            )
+
         return yours, latest, beta
 
 
