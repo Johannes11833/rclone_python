@@ -14,6 +14,14 @@ from rich.progress import (
     DownloadColumn,
 )
 
+
+class RcloneException(ChildProcessError):
+    def __init__(self, description, error_msg):
+        self.description = description
+        self.error_msg = error_msg
+        super().__init__(f"{description}. Error message: \n{error_msg}")
+
+
 # ---------------------------------------------------------------------------- #
 #                               General Functions                              #
 # ---------------------------------------------------------------------------- #
@@ -27,20 +35,36 @@ def args2string(args: List[str]) -> str:
     return ""
 
 
-def run_cmd(
-    command: str, args: List[str] = (), shell=True, encoding="utf-8"
+def run_rclone_cmd(
+    command: str,
+    args: List[str] = (),
+    shell=True,
+    encoding="utf-8",
+    raise_errors: bool = True,
 ) -> subprocess.CompletedProcess:
     # add optional arguments and flags to the command
     args_str = args2string(args)
-    command = f"{command} {args_str}"
+    full_command = f"rclone {command} {args_str}"
 
-    return subprocess.run(
-        command,
+    process = subprocess.run(
+        full_command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         shell=shell,
         encoding=encoding,
     )
+
+    if process.returncode != 0 and raise_errors:
+        msg = f'Rclone "{command}" command failed'
+        if len(args) > 0:
+            msg += 'with args "{args_str}"'
+
+        raise RcloneException(msg, process.stderr)
+
+    if raise_errors is True:
+        return process.stdout, process.stderr
+    else:
+        return process.returncode, process.stdout, process.stderr
 
 
 def shorten_filepath(in_path: Union[str, Path], max_length: int) -> str:
