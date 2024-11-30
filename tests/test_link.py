@@ -1,4 +1,3 @@
-from time import sleep
 from rclone_python import rclone
 import re
 
