@@ -1,36 +1,9 @@
 from pathlib import Path
 import subprocess
-import tempfile
 from typing import Callable, List, Union
-import uuid
 import pytest
 from rclone_python import rclone
 from unittest.mock import patch
-
-
-@pytest.fixture(scope="function")
-def tmp_remote_folder(default_test_setup):
-    # automatically removes this folder after a test function compted.
-    # only the teardown is done, the folder is not created and the test should upload to that path.
-    remote_relative_test_dir = (
-        f"{default_test_setup.remote_test_data_dir}/{uuid.uuid4()}"
-    )
-
-    yield remote_relative_test_dir
-
-    # TEARDOWN
-    print(f"\nTeardown: deleting temp remote folder at {remote_relative_test_dir}")
-    rclone.purge(remote_relative_test_dir)
-
-
-@pytest.fixture(scope="function")
-def tmp_local_folder():
-    # create a local tmp folder that will be automatically removed.
-    with tempfile.TemporaryDirectory() as path:
-        print("created temporary directory:", path)
-        yield Path(path)
-
-    print("Teardown: removed local tmp folder")
 
 
 class Recorder:
@@ -55,7 +28,7 @@ class Recorder:
         ]
 
 
-def create_tmp_local_file(
+def create_local_file(
     path: Union[str, Path], size_mb: float, file_name: str = "tmp_file.file"
 ) -> Path:
     # Create local file of specific size.
@@ -105,7 +78,7 @@ def test_rclone_command_called(wrapper_command: Callable, rclone_command: str):
     ],
 )
 def test_copy(default_test_setup, tmp_remote_folder, tmp_local_folder, command):
-    tmp_local_file = create_tmp_local_file(
+    tmp_local_file = create_local_file(
         tmp_local_folder, default_test_setup.tmp_local_file_size_mb
     )
 
@@ -123,13 +96,14 @@ def test_copy(default_test_setup, tmp_remote_folder, tmp_local_folder, command):
 
 
 def test_sync(default_test_setup, tmp_remote_folder, tmp_local_folder):
-    tmp_local_file_1 = create_tmp_local_file(
+    tmp_local_file_1 = create_local_file(
         tmp_local_folder, default_test_setup.tmp_local_file_size_mb, file_name="file_1"
     )
-    tmp_local_file_2 = create_tmp_local_file(
+    tmp_local_file_2 = create_local_file(
         tmp_local_folder, default_test_setup.tmp_local_file_size_mb, file_name="file_2"
     )
 
+    # copy lorem.txt to remote
     rclone.copy(default_test_setup.local_test_txt_file, tmp_remote_folder)
 
     # sync local to remote --> this should remove the just uploaded test_txt_file
@@ -140,7 +114,7 @@ def test_sync(default_test_setup, tmp_remote_folder, tmp_local_folder):
 
 
 def test_move(default_test_setup, tmp_remote_folder, tmp_local_folder):
-    tmp_local_file = create_tmp_local_file(
+    tmp_local_file = create_local_file(
         tmp_local_folder, default_test_setup.tmp_local_file_size_mb
     )
 
@@ -174,8 +148,8 @@ def test_move(default_test_setup, tmp_remote_folder, tmp_local_folder):
 def test_progress_listener(tmp_remote_folder, tmp_local_folder, show_progress, method):
     # check if the listener is successfully provided with updates
     # file size should be large enough to receive progress updates
-    tmp_file_1 = create_tmp_local_file(tmp_local_folder, 10.25, file_name="file_1")
-    tmp_file_2 = create_tmp_local_file(tmp_local_folder, 15.776, file_name="file_2")
+    tmp_file_1 = create_local_file(tmp_local_folder, 10.25, file_name="file_1")
+    tmp_file_2 = create_local_file(tmp_local_folder, 15.776, file_name="file_2")
 
     recorder = Recorder()
 

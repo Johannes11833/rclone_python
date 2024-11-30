@@ -3,11 +3,12 @@ import re
 import logging
 from functools import wraps
 from shutil import which
-from typing import Optional, Union, List, Dict, Callable
+from typing import Optional, Tuple, Union, List, Dict, Callable
 
 from rclone_python import utils
 from rclone_python.hash_types import HashTypes
 from rclone_python.remote_types import RemoteTypes
+
 
 # debug flag enables/disables raw output of rclone progresses in the terminal
 DEBUG = False
@@ -34,7 +35,7 @@ def is_installed() -> bool:
 
 
 @__check_installed
-def about(remote_name: str):
+def about(remote_name: str) -> Dict:
     """
     Executes the rclone about command and returns the retrieved json as a dictionary.
     :param remote_name: The name of the remote to examine.
@@ -44,14 +45,9 @@ def about(remote_name: str):
         # if the remote name missed the colon manually add it.
         remote_name += ":"
 
-    process = utils.run_cmd(f"rclone about {remote_name} --json")
+    stdout, _ = utils.run_rclone_cmd(f'about "{remote_name}" --json')
 
-    if process.returncode == 0:
-        return json.loads(process.stdout)
-    else:
-        raise Exception(
-            f"An error occurred while executing the about command: {process.stderr}"
-        )
+    return json.loads(stdout)
 
 
 @__check_installed
@@ -93,7 +89,7 @@ def create_remote(
 
     if not check_remote_existing(remote_name):
         # set up the selected cloud
-        command = f'rclone config create "{remote_name}" "{remote_type}"'
+        command = f'config create "{remote_name}" "{remote_type}"'
 
         if client_id and client_secret:
             logging.info("Using the provided client id and client secret.")
@@ -110,16 +106,14 @@ def create_remote(
             command += f' {key}="{value}"'
 
         # run the setup command
-        process = utils.run_cmd(command)
-
-        if process.returncode != 0:
-            raise Exception(process.stderr)
+        utils.run_rclone_cmd(command)
     else:
         raise Exception(
             f"A rclone remote with the name '{remote_name}' already exists!"
         )
 
 
+@__check_installed
 def mkdir(
     path: str,
     args=None,
@@ -132,16 +126,10 @@ def mkdir(
     if args is None:
         args = []
 
-    process = utils.run_cmd(f"rclone mkdir {path}", args=args)
-
-    if process.returncode == 0:
-        return process.stdout
-    else:
-        raise Exception(
-            f"An error occurred while executing the mkdir command: {process.stderr}"
-        )
+    utils.run_rclone_cmd(f'mkdir "{path}"', args=args)
 
 
+@__check_installed
 def cat(
     path: str,
     count: Optional[int] = None,
@@ -171,14 +159,8 @@ def cat(
     if tail is not None:
         args.append(f"--tail {tail}")
 
-    process = utils.run_cmd(f"rclone cat {path}", args=args)
-
-    if process.returncode == 0:
-        return process.stdout
-    else:
-        raise Exception(
-            f"An error occurred while executing the cat command: {process.stderr}"
-        )
+    stdout, _ = utils.run_rclone_cmd(f'cat "{path}"', args=args)
+    return stdout
 
 
 def copy(
@@ -358,8 +340,9 @@ def get_remotes() -> List[str]:
     """
     :return: A list of all available remotes.
     """
-    command = "rclone listremotes"
-    remotes = utils.run_cmd(command).stdout.split()
+    command = "listremotes"
+    stdout, _ = utils.run_rclone_cmd(command)
+    remotes = stdout.split()
     if remotes is None:
         remotes = []
 
@@ -376,14 +359,8 @@ def purge(path: str, args=None):
     if args is None:
         args = []
 
-    command = f'rclone purge "{path}"'
-    process = utils.run_cmd(command, args)
-    if process.returncode == 0:
-        logging.info(f"Successfully purged {path}")
-    else:
-        raise Exception(
-            f'Purging path "{path}" failed with error message:\n{process.stderr}'
-        )
+    command = f'purge "{path}"'
+    utils.run_rclone_cmd(command, args)
 
 
 @__check_installed
@@ -397,15 +374,8 @@ def delete(path: str, args=None):
     if args is None:
         args = []
 
-    command = f'rclone delete "{path}"'
-    process = utils.run_cmd(command, args)
-
-    if process.returncode == 0:
-        logging.info(f"Successfully deleted {path}")
-    else:
-        raise Exception(
-            f'Deleting path "{path}" failed with error message:\n{process.stderr}'
-        )
+    command = f'delete "{path}"'
+    utils.run_rclone_cmd(command, args)
 
 
 @__check_installed
@@ -426,7 +396,7 @@ def link(
     if args is None:
         args = []
 
-    command = f'rclone link "{path}"'
+    command = f'link "{path}"'
 
     # add optional parameters
     if expire is not None:
@@ -434,12 +404,9 @@ def link(
     if unlink:
         args.append(f"--unlink")
 
-    process = utils.run_cmd(command, args)
+    stdout, _ = utils.run_rclone_cmd(command, args)
 
-    if process.returncode != 0:
-        raise Exception(process.stderr)
-    else:
-        return process.stdout
+    return stdout
 
 
 @__check_installed
@@ -463,7 +430,7 @@ def ls(
     if args is None:
         args = []
 
-    command = f'rclone lsjson "{path}"'
+    command = f'lsjson "{path}"'
 
     # add optional parameters
     if max_depth is not None:
@@ -473,14 +440,32 @@ def ls(
     if files_only:
         args.append("--files-only")
 
-    process = utils.run_cmd(command, args)
-
-    if process.returncode == 0:
-        return json.loads(process.stdout)
-    else:
-        raise Exception(f"ls operation on {path} failed with:\n{process.stderr}")
+    stdout, _ = utils.run_rclone_cmd(command, args)
+    return json.loads(stdout)
 
 
+@__check_installed
+def size(
+    path: str,
+    args: List[str] = None,
+) -> Dict:
+    """Returns the total size and number of objects in the path.
+
+    Args:
+        path (str): The path to calculate the total size on.
+        args (List[str], optional): Optional additional list of flags.
+
+    Returns:
+        Dict: Dictionary containing the file count, total file size in bytes and number of empty items.
+    """
+    if args is None:
+        args = []
+
+    stdout, _ = utils.run_rclone_cmd(f'size "{path}" --json', args)
+    return json.loads(stdout)
+
+
+@__check_installed
 def tree(
     path: str,
     args: List[str] = None,
@@ -497,12 +482,8 @@ def tree(
     if args is None:
         args = []
 
-    process = utils.run_cmd(f'rclone tree "{path}"', args)
-
-    if process.returncode != 0:
-        raise Exception(process.stderr)
-    else:
-        return process.stdout
+    stdout, _ = utils.run_rclone_cmd(f'tree "{path}"', args)
+    return stdout
 
 
 @__check_installed
@@ -525,7 +506,7 @@ def hash(
         args (List[str], optional): Optional additional list of flags.
 
     Raises:
-        Exception: Raised when the rclone command does not succeed.
+        RcloneException: Raised when the rclone command does not succeed.
 
     Returns:
         Union[None, str, bool, Dict[str, str], Dict[str, bool]]: 3 different modes apply based on the inputs:
@@ -553,13 +534,15 @@ def hash(
     if output_file is not None:
         args.append(f'--output-file "{output_file}"')
 
-    process: str = utils.run_cmd(f'rclone hashsum "{hash}" "{path}"', args)
+    returncode, stdout, stderr = utils.run_rclone_cmd(
+        f'hashsum "{hash}" "{path}"', args, raise_errors=False
+    )
 
-    lines = process.stdout.splitlines()
+    lines = stdout.splitlines()
 
     exception = False
 
-    if process.returncode != 0:
+    if returncode != 0:
         if checkfile is None:
             exception = True
         else:
@@ -570,8 +553,9 @@ def hash(
                     break
 
     if exception:
-        raise Exception(
-            f"hashsum operation on {path} with hash='{hash}' failed with:\n{process.stderr}"
+        raise utils.RcloneException(
+            f'hashsum command failed on path "{path}" with hash="{hash}"',
+            stderr,
         )
 
     if output_file is None:
@@ -580,7 +564,9 @@ def hash(
 
         for l in lines:
             if len(l) > 0:
-                value, key = l.split("  ", maxsplit=1)
+                # in checkfile mode only a single space separates key and value (key=matching, value=filename)
+                # while in normal mode a double space is used.
+                value, key = [item.strip() for item in l.split(" ", maxsplit=1)]
 
                 if checkfile is None:
                     hashsums[key] = value
@@ -599,7 +585,7 @@ def hash(
 def version(
     check=False,
     args: List[str] = None,
-) -> Union[str, List[str]]:
+) -> Union[str, Tuple[str]]:
     """Get the rclone version number.
 
     Args:
@@ -615,28 +601,24 @@ def version(
     if check:
         args.append("--check")
 
-    process = utils.run_cmd("rclone version", args)
-
-    if process.returncode != 0:
-        raise Exception(process.stderr)
-
-    stdout = process.stdout
+    stdout, stderr = utils.run_rclone_cmd("version", args)
 
     if not check:
-        return stdout.split("\n")[0].replace("rclone ", "")
+        return stdout.splitlines()[0].replace("rclone ", "")
     else:
         yours = re.findall(r"yours:\s+([\d.]+)", stdout)[0]
-        latest = re.findall(r"latest:\s+([\d.]+)", stdout)[0]
+        latest = re.findall(r"latest:\s+([\d.]+)", stdout)
+        latest = latest[0] if latest else None
         # beta version might include dashes and word characters e.g. '1.64.0-beta.7161.9169b2b5a'
-        beta = re.findall(r"beta:\s+([.\w-]+)", stdout)[0]
+        beta = re.findall(r"beta:\s+([.\w-]+)", stdout)
+        beta = beta[0] if beta else None
+
+        if not latest or not beta:
+            logging.warning(
+                f"Failed to get latest rclone versions. The following error was output by rclone:\n{stderr}"
+            )
+
         return yours, latest, beta
-
-
-class RcloneException(ChildProcessError):
-    def __init__(self, description, error_msg):
-        self.description = description
-        self.error_msg = error_msg
-        super().__init__(f"{description}. Error message: \n{error_msg}")
 
 
 @__check_installed
@@ -697,7 +679,7 @@ def _rclone_transfer_operation(
         logging.info("Cloud upload completed.")
     else:
         _, err = process.communicate()
-        raise RcloneException(
+        raise utils.RcloneException(
             description=f"{command_descr} from {in_path} to {out_path} failed",
             error_msg=err.decode("utf-8"),
         )
