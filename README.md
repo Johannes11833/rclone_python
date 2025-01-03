@@ -156,3 +156,8 @@ For debugging progress related functionality, set the DEBUG flag to true:
 rclone.DEBUG = True
 ```
 This will make the wrapper print the raw rclone progress. 
+
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Johannes11833/rclone_python&type=Date)](https://star-history.com/#Johannes11833/rclone_python&Date)
