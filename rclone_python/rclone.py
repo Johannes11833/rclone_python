@@ -666,7 +666,7 @@ def _rclone_transfer_operation(
     command += utils.args2string(args)
 
     # execute the upload command
-    process = utils.rclone_progress(
+    process, errors = utils.rclone_progress(
         command,
         prog_title,
         listener=listener,
@@ -678,8 +678,7 @@ def _rclone_transfer_operation(
     if process.wait() == 0:
         logging.info("Cloud upload completed.")
     else:
-        _, err = process.communicate()
         raise utils.RcloneException(
             description=f"{command_descr} from {in_path} to {out_path} failed",
-            error_msg=err.decode("utf-8"),
+            error_msg="\n".join(errors),
         )

@@ -5,6 +5,8 @@ import pytest
 from rclone_python import rclone
 from unittest.mock import patch
 
+from rclone_python.utils import RcloneException
+
 
 class Recorder:
     # Records all updates provided to the update function.
@@ -93,6 +95,13 @@ def test_copy(default_test_setup, tmp_remote_folder, tmp_local_folder, command):
         download_path,
     )
     assert (download_path / tmp_local_file.name).is_file()
+
+    # download with errors (no such directory)
+    with pytest.raises(RcloneException, match="directory not found") as e_info:
+        command(
+            tmp_remote_folder + "_1",
+            download_path,
+        )
 
 
 def test_sync(default_test_setup, tmp_remote_folder, tmp_local_folder):
