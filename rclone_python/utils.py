@@ -41,7 +41,7 @@ def run_rclone_cmd(
     shell=True,
     encoding="utf-8",
     raise_errors: bool = True,
-) -> subprocess.CompletedProcess:
+) -> Union[Tuple[str, str], Tuple[int, str, str]]:
     # add optional arguments and flags to the command
     args_str = args2string(args)
     full_command = f"rclone {command} {args_str}"
@@ -94,9 +94,10 @@ def rclone_progress(
     listener: Callable[[Dict], None] = None,
     debug=False,
     pbar: Optional[Progress] = None,
-) -> subprocess.Popen:
+) -> Tuple[subprocess.Popen, List[str]]:
     total_progress_id = None
     subprocesses = {}
+    errors = []
 
     if show_progress:
         if pbar is None:
@@ -123,16 +124,26 @@ def rclone_progress(
                 listener(update_dict)
 
             if debug:
-                pbar.log(line)
+                if show_progress:
+                    pbar.log(line)
+                else:
+                    print(line)
+
+        else:
+            if update_dict is not None:
+                obj = update_dict.get("object", "")
+                msg = update_dict.get("msg", "<Error message missing>")
+                errors.append((obj + ": " if obj else "") + msg)
 
     if show_progress:
-        complete_task(total_progress_id, pbar)
-        for _, task_id in subprocesses.items():
-            # hide all subprocesses
-            pbar.update(task_id=task_id, visible=False)
+        if process.wait() == 0:
+            complete_task(total_progress_id, pbar)
+            for _, task_id in subprocesses.items():
+                # hide all subprocesses
+                pbar.update(task_id=task_id, visible=False)
         pbar.stop()
 
-    return process
+    return process, errors
 
 
 def extract_rclone_progress(line: str) -> Tuple[bool, Union[Dict[str, Any], None]]:
@@ -144,11 +155,16 @@ def extract_rclone_progress(line: str) -> Tuple[bool, Union[Dict[str, Any], None
         line (str): One output line of the rclone transfer operation with the --use-json-log flag enabled.
 
     Returns:
-        Tuple[bool, Union[Dict[str, Any], None]]: The retrieved update Dictionary.
+        Tuple[bool, Union[Dict[str, Any], None]]: The retrieved update Dictionary or error message.
     """
 
     try:
-        stats: Dict = json.loads(line).get("stats", None)
+        log_item: Dict = json.loads(line)
+        if log_item.get("level", None) == "error":
+            return False, log_item
+        else:
+            # stats updates use the "info" level
+            stats = log_item.get("stats", None)
     except ValueError:
         stats = None
 
