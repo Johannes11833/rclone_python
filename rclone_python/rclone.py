@@ -1,6 +1,5 @@
 import json
 import re
-import logging
 from functools import wraps
 from shutil import which
 from typing import Optional, Tuple, Union, List, Dict, Callable
@@ -8,10 +7,7 @@ from typing import Optional, Tuple, Union, List, Dict, Callable
 from rclone_python import utils
 from rclone_python.hash_types import HashTypes
 from rclone_python.remote_types import RemoteTypes
-
-
-# debug flag enables/disables raw output of rclone progresses in the terminal
-DEBUG = False
+from rclone_python.logs import logger
 
 
 def __check_installed(func):
@@ -25,6 +21,15 @@ def __check_installed(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+def set_log_level(level: int):
+    """Change the log level of this wrapper.
+
+    Args:
+        level (int): The log level to use.
+    """
+    logger.setLevel(level)
 
 
 def is_installed() -> bool:
@@ -92,12 +97,12 @@ def create_remote(
         command = f'config create "{remote_name}" "{remote_type}"'
 
         if client_id and client_secret:
-            logging.info("Using the provided client id and client secret.")
+            logger.info("Using the provided client id and client secret.")
 
             kwargs["client_id"] = client_id
             kwargs["client_secret"] = client_secret
         else:
-            logging.warning(
+            logger.warning(
                 "The drive client id and the client secret have not been set. Using defaults."
             )
 
@@ -614,7 +619,7 @@ def version(
         beta = beta[0] if beta else None
 
         if not latest or not beta:
-            logging.warning(
+            logger.warning(
                 f"Failed to get latest rclone versions. The following error was output by rclone:\n{stderr}"
             )
 
@@ -671,12 +676,11 @@ def _rclone_transfer_operation(
         prog_title,
         listener=listener,
         show_progress=show_progress,
-        debug=DEBUG,
         pbar=pbar,
     )
 
     if process.wait() == 0:
-        logging.info("Cloud upload completed.")
+        logger.info("Cloud upload completed.")
     else:
         raise utils.RcloneException(
             description=f"{command_descr} from {in_path} to {out_path} failed",
