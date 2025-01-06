@@ -3,6 +3,7 @@ import subprocess
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from rich.progress import Progress, TaskID, Task
 from pathlib import Path
+from rclone_python.logs import logger
 
 from rich.progress import (
     Progress,
@@ -92,7 +93,6 @@ def rclone_progress(
     pbar_title: str,
     show_progress=True,
     listener: Callable[[Dict], None] = None,
-    debug=False,
     pbar: Optional[Progress] = None,
 ) -> Tuple[subprocess.Popen, List[str]]:
     total_progress_id = None
@@ -123,17 +123,14 @@ def rclone_progress(
             if listener:
                 listener(update_dict)
 
-            if debug:
-                if show_progress:
-                    pbar.log(line)
-                else:
-                    print(line)
+            logger.debug(line)
 
         else:
             if update_dict is not None:
                 obj = update_dict.get("object", "")
                 msg = update_dict.get("msg", "<Error message missing>")
                 errors.append((obj + ": " if obj else "") + msg)
+                logger.warning(f"Rclone omitted an error: {update_dict}")
 
     if show_progress:
         if process.wait() == 0:

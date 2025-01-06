@@ -150,10 +150,10 @@ Copying data to data1 ━━━━━━╸━━━━━━━━━━━━�
  └─another.mp4        ━╸━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   4% 1.4 MB/s
 ```
 
-## Debug
-For debugging progress related functionality, set the DEBUG flag to true: 
+## Set the log level
+The log level can be set using: 
 ```python
-rclone.DEBUG = True
+rclone.set_log_level(logging.DEBUG)
 ```
 This will make the wrapper print the raw rclone progress. 
 
