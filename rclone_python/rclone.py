@@ -1,7 +1,9 @@
 import json
+from pathlib import Path
 import re
 from functools import wraps
 from shutil import which
+import tempfile
 from typing import Optional, Tuple, Union, List, Dict, Callable
 
 from rclone_python import utils
@@ -584,6 +586,55 @@ def hash(
             return next(iter(hashsums.values()))
 
         return hashsums
+
+
+@__check_installed
+def check(
+    source: str,
+    dest: str,
+    combined: str = None,
+    size_only: bool = False,
+    download: bool = False,
+    one_way: bool = False,
+    args: List[str] = None,
+) -> Tuple[bool, List[Tuple[str, str]]]:
+    if args is None:
+        args = []
+    if size_only:
+        args.append("--size-only")
+    if download:
+        args.append("--download")
+    if one_way:
+        args.append("--one-way")
+
+    tmp = None
+    if not combined:
+        tmp = tempfile.TemporaryDirectory()
+        combined = Path(tmp.name, "combined_file")
+    args.append(f'--combined "{combined}"')
+
+    returncode, _, stderr = utils.run_rclone_cmd(
+        f'check "{source}" "{dest}"', args, raise_errors=False
+    )
+
+    logger.debug(f"Rclone check stderr output:\n{stderr}")
+
+    # read the combined file and extract all elements
+    combined_file = Path(combined)
+    if returncode != 0 and not combined_file.is_file():
+        raise utils.RcloneException(
+            f'check command failed on source: "{source}" dest: "{dest}"',
+            stderr,
+        )
+    out = [
+        tuple(line.split(" ", maxsplit=1))
+        for line in combined_file.read_text().splitlines()
+    ]
+
+    if tmp:
+        tmp.cleanup()
+
+    return returncode == 0, out
 
 
 @__check_installed
