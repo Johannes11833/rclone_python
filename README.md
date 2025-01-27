@@ -118,6 +118,22 @@ print(rclone.hash(HashTypes.sha1, "box:data")
 {'video1.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b', 'video3.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b', 'video2.webm': '3ef08d895f25e8b7d84d3a1ac58f8f302e33058b'}
 ```
 
+### Check
+Checks the files in the source and destination match.
+  - "=" path means path was found in source and destination and was identical
+  - "-" path means path was missing on the source, so only in the destination
+  - "+" path means path was missing on the destination, so only in the source
+  - "*" path means path was present in source and destination but different.
+  - "!" path means there was an error reading or hashing the source or dest.
+```python
+from rclone_python import rclone
+
+print(rclone.check("data", "box:data"))
+```
+```console
+(False, [('*', 'video1.webm'), ('=', 'video2.webm'), ('=', 'video2.webm')])
+```
+
 ## Custom Progressbar
 You can use your own rich progressbar with all transfer operations.
 This allows you to customize the columns to be displayed.
