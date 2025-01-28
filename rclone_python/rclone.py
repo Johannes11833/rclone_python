@@ -635,6 +635,8 @@ def check(
     if not combined:
         tmp = tempfile.TemporaryDirectory()
         combined = Path(tmp.name, "combined_file")
+    # even if --combined is also specified by the user through args,
+    # this one will be used as apparently rclone uses the last specification.
     args.append(f'--combined "{combined}"')
 
     returncode, _, stderr = utils.run_rclone_cmd(
