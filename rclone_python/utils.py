@@ -47,6 +47,8 @@ def run_rclone_cmd(
     args_str = args2string(args)
     full_command = f"rclone {command} {args_str}"
 
+    logger.debug(f"Running command: {full_command}")
+
     process = subprocess.run(
         full_command,
         stdout=subprocess.PIPE,

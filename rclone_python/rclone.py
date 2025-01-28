@@ -1,7 +1,9 @@
 import json
+from pathlib import Path
 import re
 from functools import wraps
 from shutil import which
+import tempfile
 from typing import Optional, Tuple, Union, List, Dict, Callable
 
 from rclone_python import utils
@@ -584,6 +586,82 @@ def hash(
             return next(iter(hashsums.values()))
 
         return hashsums
+
+
+@__check_installed
+def check(
+    source: str,
+    dest: str,
+    combined: str = None,
+    size_only: bool = False,
+    download: bool = False,
+    one_way: bool = False,
+    args: List[str] = None,
+) -> Tuple[bool, List[Tuple[str, str]]]:
+    """Checks the files in the source and destination match.
+
+    Args:
+        source (str): The source path.
+        dest (str): The destination path.
+        combined (str, optional): Path to the combined file. Defaults to None.
+        size_only (bool, optional): Only compare the sizes not the hashes as well. Use this for a quick check. Defaults to False.
+        download (bool, optional): Download the data from both remotes and check them against each other on the fly. This can be useful for remotes that don't support hashes or if you really want to check all the data. Defaults to False.
+        one_way (bool, optional): Only check that files in the source match the files in the destination, not the other way around. This means that extra files in the destination that are not in the source will not be detected. Defaults to False.
+        args (List[str], optional): Optional additional list of flags and arguments. Defaults to None.
+
+    Raises:
+        utils.RcloneException: Raised when the rclone command does not succeed.
+
+    Returns:
+        Tuple[bool, List[Tuple[str, str]]]: The bool is true if source and dest match.
+                                            The list contains a symbol and all file paths in both directories. The following symbols are used:
+                                                "=" path means path was found in source and destination and was identical
+                                                "-" path means path was missing on the source, so only in the destination
+                                                "+" path means path was missing on the destination, so only in the source
+                                                "*" path means path was present in source and destination but different.
+                                                "!" path means there was an error reading or hashing the source or dest.
+
+    """
+    if args is None:
+        args = []
+    if size_only:
+        args.append("--size-only")
+    if download:
+        args.append("--download")
+    if one_way:
+        args.append("--one-way")
+
+    tmp = None
+    if not combined:
+        tmp = tempfile.TemporaryDirectory()
+        combined = Path(tmp.name, "combined_file")
+    # even if --combined is also specified by the user through args,
+    # this one will be used as apparently rclone uses the last specification.
+    args.append(f'--combined "{combined}"')
+
+    returncode, _, stderr = utils.run_rclone_cmd(
+        f'check "{source}" "{dest}"', args, raise_errors=False
+    )
+
+    logger.debug(f"Rclone check stderr output:\n{stderr}")
+
+    # read the combined file and extract all elements
+    combined_file = Path(combined)
+    if returncode != 0 and not combined_file.is_file():
+        raise utils.RcloneException(
+            f'check command failed on source: "{source}" dest: "{dest}"',
+            stderr,
+        )
+    out = [
+        # the file holds the symbol followed by a space and then the filepath
+        tuple(line.split(" ", maxsplit=1))
+        for line in combined_file.read_text().splitlines()
+    ]
+
+    if tmp:
+        tmp.cleanup()
+
+    return returncode == 0, out
 
 
 @__check_installed
