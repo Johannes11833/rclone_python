@@ -28,6 +28,26 @@ class RcloneException(ChildProcessError):
 # ---------------------------------------------------------------------------- #
 
 
+class Config:
+    """Config set up as singleton"""
+    _instance = None
+    _initialized = False
+    config_path = None
+
+    def __new__(cls, *args, **kwargs):
+        """Create a new instance of the Config class if it doesn't exist yet."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, config_path: Union[str, Path] = None):
+        if self._initialized:
+            logger.warning("Config already initialized.")
+        else:
+            self.config_path = config_path
+            self.__class__._initialized = True
+
+
 def args2string(args: List[str]) -> str:
     # separate flags/ named arguments by a space
     if args:
@@ -43,9 +63,18 @@ def run_rclone_cmd(
     encoding="utf-8",
     raise_errors: bool = True,
 ) -> Union[Tuple[str, str], Tuple[int, str, str]]:
+
+    # Set the config path if defined by the user,
+    # otherwise the default rclone config path is used:
+    config = Config()
+    if config.config_path is not None:
+        base_command = f"rclone --config={config.config_path}"
+    else:
+        base_command = "rclone"
+
     # add optional arguments and flags to the command
     args_str = args2string(args)
-    full_command = f"rclone {command} {args_str}"
+    full_command = f"{base_command} {command} {args_str}"
 
     logger.debug(f"Running command: {full_command}")
 
