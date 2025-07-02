@@ -41,9 +41,7 @@ class Config:
         return cls._instance
 
     def __init__(self, config_path: Union[str, Path] = None):
-        if self._initialized:
-            logger.warning("Config already initialized.")
-        else:
+        if not self._initialized:
             self.config_path = config_path
             self.__class__._initialized = True
 
