@@ -25,6 +25,11 @@ def __check_installed(func):
     return wrapper
 
 
+def set_config_file(config_file: str):
+    """Change the config file used by this wrapper."""
+    utils.Config(config_file)
+
+
 def set_log_level(level: int):
     """Change the log level of this wrapper.
 

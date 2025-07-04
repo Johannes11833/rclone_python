@@ -134,6 +134,19 @@ print(rclone.check("data", "box:data"))
 (False, [('*', 'video1.webm'), ('=', 'video2.webm'), ('=', 'video2.webm')])
 ```
 
+### Custom config file
+You can define a custom file which rclone shall use by setting it up before running any command.
+Example with a config file named ".rclone.conf" in current working directory:
+```python
+import pathlib
+from rclone_python import rclone
+
+CONFIG_FILE = pathlib.Path(__file__).parent / ".rclone.conf"
+
+rclone.set_config_file(CONFIG_FILE)
+# All upcoming rclone commands will use custom config file
+```
+
 ## Custom Progressbar
 You can use your own rich progressbar with all transfer operations.
 This allows you to customize the columns to be displayed.
