@@ -30,6 +30,7 @@ class RcloneException(ChildProcessError):
 
 class Config:
     """Config set up as singleton"""
+
     _instance = None
     _initialized = False
     config_path = None
@@ -127,6 +128,12 @@ def rclone_progress(
     total_progress_id = None
     subprocesses = {}
     errors = []
+
+    # Set the config path if defined by the user,
+    # otherwise the default rclone config path is used:
+    config = Config()
+    if config.config_path is not None:
+        command += f' --config="{config.config_path}"'
 
     if show_progress:
         if pbar is None:
