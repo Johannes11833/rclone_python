@@ -62,7 +62,6 @@ def run_rclone_cmd(
     encoding="utf-8",
     raise_errors: bool = True,
 ) -> Union[Tuple[str, str], Tuple[int, str, str]]:
-
     # Set the config path if defined by the user,
     # otherwise the default rclone config path is used:
     config = Config()
