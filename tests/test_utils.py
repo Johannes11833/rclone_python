@@ -46,7 +46,9 @@ def test_extract_rclone_progress_normal_update(valid_rclone_stats_update):
     # valid input where the total file size is already known
     input = valid_rclone_stats_update
 
-    valid, output = extract_rclone_progress(json.dumps({"stats": input}))
+    valid, output = extract_rclone_progress(
+        json.dumps({"stats": input, "level": "info"})
+    )
     assert valid
     # validate task summary
     assert output["total"] == pytest.approx(input["totalBytes"])

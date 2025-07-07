@@ -17,7 +17,6 @@ from rich.progress import (
 
 
 class RcloneException(ChildProcessError):
-
     def __init__(self, description: str, error_msg: str):
         self.description = description
         self.error_msg = error_msg
