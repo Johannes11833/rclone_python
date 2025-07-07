@@ -203,7 +203,7 @@ def test_progress_listener(tmp_remote_folder, tmp_local_folder, show_progress, m
 def test_rclone_transfer_operation_error_message(default_test_setup, tmp_local_folder):
     faulty_remote_name = default_test_setup.remote_name + "s:"
 
-    try:        
+    try:
         rclone.copy(faulty_remote_name, tmp_local_folder)
         assert False
     except RcloneException as exception:
