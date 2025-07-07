@@ -17,7 +17,8 @@ from rich.progress import (
 
 
 class RcloneException(ChildProcessError):
-    def __init__(self, description, error_msg):
+
+    def __init__(self, description: str, error_msg: str):
         self.description = description
         self.error_msg = error_msg
         super().__init__(f"{description}. Error message: \n{error_msg}")
@@ -189,11 +190,15 @@ def extract_rclone_progress(line: str) -> Tuple[bool, Union[Dict[str, Any], None
     Returns:
         Tuple[bool, Union[Dict[str, Any], None]]: The retrieved update Dictionary or error message.
     """
+    stats = None
 
     try:
         log_item: Dict = json.loads(line)
-        if log_item.get("level", None) == "error":
-            return False, log_item
+        level = log_item.get("level", None)
+        if level != "info":
+            if level in ("error", "critical"):
+                # return error message
+                return False, log_item
         else:
             # stats updates use the "info" level
             stats = log_item.get("stats", None)

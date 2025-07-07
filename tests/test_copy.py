@@ -198,3 +198,15 @@ def test_progress_listener(tmp_remote_folder, tmp_local_folder, show_progress, m
     assert len(file_2_progress) > 0
     assert file_2_progress[0] == pytest.approx(0, abs=0.1)
     assert file_2_progress[-1] == pytest.approx(1)
+
+
+def test_rclone_transfer_operation_error_message(default_test_setup, tmp_local_folder):
+    faulty_remote_name = default_test_setup.remote_name + "s:"
+
+    try:        
+        rclone.copy(faulty_remote_name, tmp_local_folder)
+        assert False
+    except RcloneException as exception:
+        # check that a rclone exception message is set
+        assert len(exception.description) > 0
+        assert len(exception.error_msg) > 0
