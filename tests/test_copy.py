@@ -96,12 +96,9 @@ def test_copy(default_test_setup, tmp_remote_folder, tmp_local_folder, command):
     )
     assert (download_path / tmp_local_file.name).is_file()
 
-    # download with errors (no such directory)
+    # upload with errors (no such directory)
     with pytest.raises(RcloneException, match="directory not found") as e_info:
-        command(
-            tmp_remote_folder + "_1",
-            download_path,
-        )
+        command(str(tmp_local_folder) + "_foo", tmp_remote_folder)
 
 
 def test_sync(default_test_setup, tmp_remote_folder, tmp_local_folder):
@@ -168,6 +165,8 @@ def test_progress_listener(tmp_remote_folder, tmp_local_folder, show_progress, m
         tmp_remote_folder,
         listener=recorder.update,
         show_progress=show_progress,
+        # limit the bandwidth to see progress updates
+        args=["--bwlimit 10M"],
     )
 
     # check that all fields are there
