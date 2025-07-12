@@ -166,7 +166,7 @@ def test_progress_listener(tmp_remote_folder, tmp_local_folder, show_progress, m
         listener=recorder.update,
         show_progress=show_progress,
         # limit the bandwidth to see progress updates
-        args=["--bwlimit 10M"],
+        args=["--bwlimit 5M"],
     )
 
     # check that all fields are there
