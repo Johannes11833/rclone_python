@@ -47,17 +47,15 @@ def is_installed() -> bool:
 
 
 @__check_installed
-def about(remote_name: str) -> Dict:
+def about(path: str) -> Dict:
     """
     Executes the rclone about command and returns the retrieved json as a dictionary.
+    All sizes are in number of bytes. This command can be run with local and remote paths.
     :param remote_name: The name of the remote to examine.
     :return: Dictionary with remote properties.
     """
-    if not remote_name.endswith(":"):
-        # if the remote name missed the colon manually add it.
-        remote_name += ":"
 
-    stdout, _ = utils.run_rclone_cmd(f'about "{remote_name}" --json')
+    stdout, _ = utils.run_rclone_cmd(f'about "{path}" --json')
 
     return json.loads(stdout)
 

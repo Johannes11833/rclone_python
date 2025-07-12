@@ -22,8 +22,8 @@ class TestSetup:
 @pytest.fixture(scope="session")
 def default_test_setup():
     return TestSetup(
-        remote_name="box",
-        remote_test_dir_rel="test_dir",
+        remote_name="test_server_s3",
+        remote_test_dir_rel="testdir",
         local_test_txt_file="tests/data/lorem.txt",
     )
 
