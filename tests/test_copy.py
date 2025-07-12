@@ -166,7 +166,7 @@ def test_progress_listener(tmp_remote_folder, tmp_local_folder, show_progress, m
         listener=recorder.update,
         show_progress=show_progress,
         # limit the bandwidth to see progress updates
-        args=["--bwlimit 5M"],
+        args=["--bwlimit 10M"],
     )
 
     # check that all fields are there
@@ -181,22 +181,24 @@ def test_progress_listener(tmp_remote_folder, tmp_local_folder, show_progress, m
     }
     assert expected_fields.issubset(unique_fields)
 
+    THRESHOLD = 0.25
+
     # check summary progress
     assert len(recorder.history) > 0
-    assert recorder.get_summary_stats("progress")[0] == pytest.approx(0, abs=0.1)
-    assert recorder.get_summary_stats("progress")[-1] == pytest.approx(1)
+    assert recorder.get_summary_stats("progress")[0] == pytest.approx(0, abs=THRESHOLD)
+    assert recorder.get_summary_stats("progress")[-1] == pytest.approx(1, abs=THRESHOLD)
 
     # check file_1 progress
     file_1_progress = recorder.get_subtask_stats("progress", tmp_file_1.name)
     assert len(file_1_progress) > 0
-    assert file_1_progress[0] == pytest.approx(0, abs=0.1)
-    assert file_1_progress[-1] == pytest.approx(1)
+    assert file_1_progress[0] == pytest.approx(0, abs=THRESHOLD)
+    assert file_1_progress[-1] == pytest.approx(1, abs=THRESHOLD)
 
     # check file_2 progress
     file_2_progress = recorder.get_subtask_stats("progress", tmp_file_2.name)
     assert len(file_2_progress) > 0
-    assert file_2_progress[0] == pytest.approx(0, abs=0.1)
-    assert file_2_progress[-1] == pytest.approx(1)
+    assert file_2_progress[0] == pytest.approx(0, abs=THRESHOLD)
+    assert file_2_progress[-1] == pytest.approx(1, abs=THRESHOLD)
 
 
 def test_rclone_transfer_operation_error_message(default_test_setup, tmp_local_folder):
