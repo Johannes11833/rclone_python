@@ -20,7 +20,7 @@ def update_hashes(output_path: str):
     hashes = []
 
     for l in lines[1:]:
-        hashes.append(l.replace("*", "").strip())
+        hashes.append(l.replace("*", "").removeprefix("-").strip())
 
     with open(output_path, "w") as o:
         o.write("from enum import Enum")
