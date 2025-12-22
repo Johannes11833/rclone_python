@@ -2,10 +2,11 @@ from enum import Enum
 
 
 class RemoteTypes(Enum):
-    """These are all the cloud systems support by rclone (generated with v1.71.2).
+    """These are all the cloud systems support by rclone (generated with v1.72.1).
     A more detailed overview can be found here: https://rclone.org/overview/
     """
 
+    archive = "archive"
     azureblob = "azureblob"
     azurefiles = "azurefiles"
     b2 = "b2"
