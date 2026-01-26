@@ -43,7 +43,9 @@ def set_executable_file(executable_file: str, validate: bool = True):
     if validate:
         path = Path(executable_file)
         if not path.is_file():
-            raise FileNotFoundError(f"Executable path '{executable_file}' does not exist")
+            raise FileNotFoundError(
+                f"Executable path '{executable_file}' does not exist"
+            )
 
     config = utils.Config()
     config.executable_path = executable_file
