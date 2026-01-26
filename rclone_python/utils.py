@@ -42,7 +42,11 @@ class Config:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, config_path: Union[str, Path] = None, executable_path: Union[str, Path] = None):
+    def __init__(
+        self,
+        config_path: Union[str, Path] = None,
+        executable_path: Union[str, Path] = None,
+    ):
         if not self._initialized:
             self.config_path = config_path
             if executable_path is not None:
@@ -68,10 +72,10 @@ def run_rclone_cmd(
     # Set the config path if defined by the user,
     # otherwise the default rclone config path is used:
     config = Config()
-    
+
     # Use custom executable path if defined, otherwise use default "rclone"
     executable = config.executable_path
-    
+
     if config.config_path is not None:
         base_command = f"{executable} --config={config.config_path}"
     else:
