@@ -34,6 +34,7 @@ class Config:
     _instance = None
     _initialized = False
     config_path = None
+    executable_path = "rclone"
 
     def __new__(cls, *args, **kwargs):
         """Create a new instance of the Config class if it doesn't exist yet."""
@@ -41,9 +42,11 @@ class Config:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, config_path: Union[str, Path] = None):
+    def __init__(self, config_path: Union[str, Path] = None, executable_path: Union[str, Path] = None):
         if not self._initialized:
             self.config_path = config_path
+            if executable_path is not None:
+                self.executable_path = executable_path
             self.__class__._initialized = True
 
 
@@ -65,10 +68,14 @@ def run_rclone_cmd(
     # Set the config path if defined by the user,
     # otherwise the default rclone config path is used:
     config = Config()
+    
+    # Use custom executable path if defined, otherwise use default "rclone"
+    executable = config.executable_path
+    
     if config.config_path is not None:
-        base_command = f"rclone --config={config.config_path}"
+        base_command = f"{executable} --config={config.config_path}"
     else:
-        base_command = "rclone"
+        base_command = executable
 
     # add optional arguments and flags to the command
     args_str = args2string(args)

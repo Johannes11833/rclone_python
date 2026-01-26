@@ -8,3 +8,4 @@ rclone_python/scripts/__pycache__
 tests/__pycache__
 .vscode/
 *.conf
+.venv/

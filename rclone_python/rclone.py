@@ -30,6 +30,25 @@ def set_config_file(config_file: str):
     utils.Config(config_file)
 
 
+def set_executable_file(executable_file: str, validate: bool = True):
+    """Change the rclone executable path used by this wrapper.
+
+    Args:
+        executable_file (str): The path to the rclone executable.
+        validate (bool): If True, validates that the path exists. Defaults to True.
+
+    Raises:
+        FileNotFoundError: If validate is True and the executable path does not exist.
+    """
+    if validate:
+        path = Path(executable_file)
+        if not path.is_file():
+            raise FileNotFoundError(f"Executable path '{executable_file}' does not exist")
+
+    config = utils.Config()
+    config.executable_path = executable_file
+
+
 def set_log_level(level: int):
     """Change the log level of this wrapper.
 
@@ -41,9 +60,18 @@ def set_log_level(level: int):
 
 def is_installed() -> bool:
     """
-    :return: True if rclone is correctly installed on the system.
+    :return: True if rclone is correctly installed on the system or a valid custom executable path is set.
     """
-    return which("rclone") is not None
+    # Check if rclone is in system PATH
+    if which("rclone") is not None:
+        return True
+
+    # Check if a custom executable path was set
+    config = utils.Config()
+    if config.executable_path != "rclone":
+        return Path(config.executable_path).is_file()
+
+    return False
 
 
 @__check_installed
