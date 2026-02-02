@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class RemoteTypes(Enum):
-    """These are all the cloud systems support by rclone (generated with v1.72.1).
+    """These are all the cloud systems support by rclone (generated with v1.73.0).
     A more detailed overview can be found here: https://rclone.org/overview/
     """
 
@@ -18,11 +18,13 @@ class RemoteTypes(Enum):
     compress = "compress"
     crypt = "crypt"
     doi = "doi"
+    drime = "drime"
     drive = "drive"
     dropbox = "dropbox"
     fichier = "fichier"
     filefabric = "filefabric"
     filelu = "filelu"
+    filen = "filen"
     filescom = "filescom"
     ftp = "ftp"
     gofile = "gofile"
@@ -35,6 +37,7 @@ class RemoteTypes(Enum):
     iclouddrive = "iclouddrive"
     imagekit = "imagekit"
     internetarchive = "internetarchive"
+    internxt = "internxt"
     jottacloud = "jottacloud"
     koofr = "koofr"
     linkbox = "linkbox"
@@ -57,6 +60,7 @@ class RemoteTypes(Enum):
     s3 = "s3"
     seafile = "seafile"
     sftp = "sftp"
+    shade = "shade"
     sharefile = "sharefile"
     sia = "sia"
     smb = "smb"
@@ -66,7 +70,6 @@ class RemoteTypes(Enum):
     tardigrade = "tardigrade"
     ulozto = "ulozto"
     union = "union"
-    uptobox = "uptobox"
     webdav = "webdav"
     yandex = "yandex"
     zoho = "zoho"
