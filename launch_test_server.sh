@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 echo "Starting MinIO server with Docker..."
 
