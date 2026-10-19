@@ -142,8 +142,13 @@ def rclone_progress(
     # Set the config path if defined by the user,
     # otherwise the default rclone config path is used:
     config = Config()
+
+    executable = config.executable_path
+
     if config.config_path is not None:
-        command += f' --config="{config.config_path}"'
+        base_command = f'{executable} --config="{config.config_path}"'
+    else:
+        base_command = executable
 
     if show_progress:
         if pbar is None:
@@ -152,7 +157,10 @@ def rclone_progress(
         total_progress_id = pbar.add_task(pbar_title, total=None)
 
     process = subprocess.Popen(
-        args=command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        args=f"{base_command} {command}",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True,
     )
 
     # rclone prints stats to stderr. each line is one update
